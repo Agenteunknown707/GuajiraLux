@@ -10,6 +10,8 @@ import { LabSelectionModal } from "../../components/LabSelectionModal"
 import { AnimatedButton } from "../../components/AnimatedButton"
 import { RGB_COLORS } from "../../constants/Data"
 import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
+import Slider from "@react-native-community/slider"
+import ColorWheelPicker from "../../components/ColorWheelPicker"
 
 const { width } = Dimensions.get("window")
 
@@ -146,17 +148,17 @@ export default function TeacherControlScreen() {
         ]}
       >
         <View style={styles.headerContent}>
-          <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
+          <Image source={{ uri: "https://1.bp.blogspot.com/-e5_-hSJNA9A/WrlkItaFslI/AAAAAAAAAsw/ZzGMFh1Ycrw_dQMINX37Y-QwNPoe-fLjACLcBGAs/s1600/logo-universidad-de-la-guajira.png" }} style={styles.logo} resizeMode="contain" />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{currentLab?.name}</Text>
             <Text style={styles.headerSubtitle}>
               {currentLab?.building} - {currentLab?.room}
             </Text>
           </View>
+          <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
+            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
-          <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
       </Animated.View>
 
       {/* Global Controls */}
@@ -189,48 +191,30 @@ export default function TeacherControlScreen() {
         </View>
 
         {/* Color Selector */}
+        {/* Color Selector */}
         <View style={styles.colorSection}>
           <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>Color Global</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorPicker}>
-            {RGB_COLORS.map((color) => (
-              <TouchableOpacity
-                key={color.value}
-                style={[
-                  styles.colorOption,
-                  { backgroundColor: color.value },
-                  selectedColor === color.value && styles.selectedColorOption,
-                ]}
-                onPress={() => setSelectedColor(color.value)}
-              >
-                {selectedColor === color.value && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <ColorWheelPicker onColorChange={(color) => setSelectedColor(color)} />
+          <Text style={{ textAlign: "center", color: colors.text }}>Color seleccionado: {selectedColor}</Text>
         </View>
 
         {/* Intensity Slider */}
-        <View style={styles.intensitySection}>
-          <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
-            Intensidad Global: {globalIntensity}%
-          </Text>
-          <View style={styles.sliderContainer}>
-            <TouchableOpacity
-              style={[styles.sliderButton, { backgroundColor: colors.border }]}
-              onPress={() => setGlobalIntensity(Math.max(0, globalIntensity - 10))}
-            >
-              <Ionicons name="remove" size={16} color={colors.text} />
-            </TouchableOpacity>
-            <View style={styles.sliderTrack}>
-              <View style={[styles.sliderFill, { backgroundColor: colors.primary, width: `${globalIntensity}%` }]} />
-            </View>
-            <TouchableOpacity
-              style={[styles.sliderButton, { backgroundColor: colors.border }]}
-              onPress={() => setGlobalIntensity(Math.min(100, globalIntensity + 10))}
-            >
-              <Ionicons name="add" size={16} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-        </View>
+       <View style={styles.intensitySection}>
+        <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
+          Intensidad Global: {globalIntensity}%
+        </Text>
+        <Slider
+          value={globalIntensity}
+          onValueChange={(value) => setGlobalIntensity(Math.round(value))}
+          minimumValue={0}
+          maximumValue={100}
+          step={1}
+          minimumTrackTintColor={colors.primary}
+          maximumTrackTintColor="#ccc"
+          thumbTintColor={colors.primary}
+          style={{ width: '100%', height: 40 }}
+        />
+      </View>
       </Animated.View>
 
       {/* Lights Grid */}
@@ -356,9 +340,13 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.sm,
   },
   logo: {
-    width: 40,
-    height: 40,
+    width: 80,
+    height: 60,
     marginRight: SIZES.md,
+    backgroundColor: "rgb(255, 255, 255)",
+    borderRadius: SIZES.borderRadius,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
   },
   headerText: {
     flex: 1,
