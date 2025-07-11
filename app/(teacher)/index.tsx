@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef} from "react"
 import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Dimensions, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "../../context/AuthContext"
@@ -19,7 +19,6 @@ import Animated, {
   withSpring,
   interpolate,
 } from "react-native-reanimated"
-import { useRef } from "react"
 
 const { width } = Dimensions.get("window")
 
@@ -186,9 +185,9 @@ export default function TeacherControlScreen() {
           <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         </View>
-       
       </Animated.View>
 
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
       {/* Global Controls */}
       <Animated.View
         style={[
@@ -204,15 +203,15 @@ export default function TeacherControlScreen() {
           <AnimatedButton
             title="Encender/Apagar Todo"
             onPress={toggleAllLights}
-            variant="secondary"
-            size="small"
-            style={{ flex: 1, marginRight: SIZES.sm }}
+            variant="primary"
+            size="medium"
           />
           <AnimatedButton
             title="Aplicar Configuración"
             onPress={applyGlobalSettings}
-            size="small"
+            size="medium"
             style={{ flex: 1, marginLeft: SIZES.sm }}
+            variant="secondary"
           />
         </View>
 
@@ -225,31 +224,29 @@ export default function TeacherControlScreen() {
 
         {/* Intensity Slider */}
        <View style={styles.intensitySection}>
-  <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
-    Intensidad Global: {Math.round(intensityRef.current)}%
-  </Text>
-  <Slider
-    value={intensityRef.current}
-    onValueChange={(value) => {
-      intensityRef.current = value
-    }}
-    onSlidingComplete={(value) => {
-      setGlobalIntensity(Math.round(value))
-    }}
-    minimumValue={0}
-    maximumValue={100}
-    step={1}
-    minimumTrackTintColor={colors.primary}
-    maximumTrackTintColor="#ccc"
-    thumbTintColor={colors.primary}
-    style={{ width: "100%", height: 40 }}
-  />
-</View>
-
+        <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
+          Intensidad Global: {Math.round(intensityRef.current)}%
+        </Text>
+        <Slider
+          value={intensityRef.current}
+          onValueChange={(value) => {
+            intensityRef.current = value
+          }}
+          onSlidingComplete={(value) => {
+            setGlobalIntensity(Math.round(value))
+          }}
+          minimumValue={0}
+          maximumValue={100}
+          step={1}
+          minimumTrackTintColor={colors.primary}
+          maximumTrackTintColor="#ccc"
+          thumbTintColor={colors.primary}
+          style={{ width: "100%", height: 40 }}
+        />
+      </View>
       </Animated.View>
 
       {/* Lights Grid */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.lightsSection, contentAnimatedStyle]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Focos Individuales ({currentLab?.lights.filter((l) => l.isOn).length}/{currentLab?.lights.length})

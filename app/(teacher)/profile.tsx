@@ -8,6 +8,7 @@ import { useTheme } from "../../context/ThemeContext"
 import { useLab } from "../../context/LabContext"
 import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
 import { AnimatedButton } from "../../components/AnimatedButton"
+import { router } from "expo-router"
 
 export default function TeacherProfileScreen() {
   const { user, logout } = useAuth()
@@ -60,12 +61,14 @@ export default function TeacherProfileScreen() {
   }
 
   const handleLogout = () => {
-    Alert.alert("Cerrar Sesión", "¿Estás seguro de que deseas cerrar sesión?", [
+     Alert.alert("Cerrar Sesión", "¿Estás seguro de que deseas cerrar sesión?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Cerrar Sesión",
-        style: "destructive",
-        onPress: logout,
+        onPress: () => {
+          logout()
+          router.replace("/(auth)/login")
+        },
       },
     ])
   }
@@ -74,9 +77,11 @@ export default function TeacherProfileScreen() {
     <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.headerTitle}>Mi Perfil</Text>
-        <Text style={styles.headerSubtitle}>Docente</Text>
+        <Image source={{ uri: "https://s3.amazonaws.com/cdn.proxybk.com/logo-uniguajira.png" }} style={styles.logo} resizeMode="contain" />
+        <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Mi Perfil</Text>
+            <Text style={styles.headerSubtitle}>Docente</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -93,7 +98,7 @@ export default function TeacherProfileScreen() {
         >
           <View style={styles.photoContainer}>
             <Image
-              source={{ uri: user?.photo || "/placeholder.svg?height=120&width=120" }}
+              source={require("../../assets/images/gael.jpeg")}
               style={styles.profilePhoto}
             />
             <TouchableOpacity style={[styles.photoEditButton, { backgroundColor: colors.primary }]}>
@@ -486,14 +491,23 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 50,
-    paddingBottom: 30,
+    paddingBottom: 10,
     paddingHorizontal: SIZES.lg,
-    alignItems: "center" as const,
+    alignItems: "flex-start" as const,
+    flexDirection: "row" as const,
   },
   logo: {
-    width: 60,
+    width: 80,
     height: 60,
     marginBottom: SIZES.md,
+    backgroundColor: "#FFFFFF",
+    borderRadius: SIZES.borderRadius,
+  },
+  headerText: {
+    marginLeft: SIZES.md,
+    flex: 1,
+    justifyContent: "center" as const,
+    alignItems: "flex-start" as const,
   },
   headerTitle: {
     color: "#FFFFFF",

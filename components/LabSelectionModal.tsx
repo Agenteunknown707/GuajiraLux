@@ -146,7 +146,7 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
 
           {/* Footer */}
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
-            <AnimatedButton title="Cancelar" onPress={onClose} variant="outline" style={{ flex: 1 }} />
+            <AnimatedButton title="Cancelar" onPress={onClose} variant="outline" />
           </View>
         </Animated.View>
       </Animated.View>

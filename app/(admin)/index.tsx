@@ -138,15 +138,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+
   },
   summaryCard: {
-    width: "48%",
+    width: "50%",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 26,
   },
   summaryIcon: {
-    width: 48,
-    height: 48,
+    width: 68,
+    height: 68,
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",

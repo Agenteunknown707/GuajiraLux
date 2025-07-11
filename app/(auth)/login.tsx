@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Animated,
   Dimensions,
   Image,
   StyleSheet,
@@ -20,6 +19,13 @@ import { useRouter } from "expo-router"
 import { useAuth } from "../../context/AuthContext"
 import { useTheme } from "../../context/ThemeContext"
 import { SIZES } from "../../constants/Colors"
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  withSequence,
+} from "react-native-reanimated"
 
 const { width, height } = Dimensions.get("window")
 
@@ -33,48 +39,21 @@ export default function LoginScreen() {
   const { colors, toggleTheme, isDark } = useTheme()
   const router = useRouter()
 
-  // Animaciones con useRef para evitar recreación
-  const fadeAnim = useRef(new Animated.Value(0)).current
-  const slideAnim = useRef(new Animated.Value(50)).current
-  const logoScaleAnim = useRef(new Animated.Value(0.8)).current
-  const formSlideAnim = useRef(new Animated.Value(30)).current
+  // Shared values para animaciones
+  const opacity = useSharedValue(0)
+  const translateY = useSharedValue(50)
+  const logoScale = useSharedValue(0.8)
+  const formTranslateY = useSharedValue(30)
 
   useEffect(() => {
-    // Secuencia de animaciones de entrada optimizada
-    const animationSequence = Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.spring(logoScaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(formSlideAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]),
-    ])
+    // Secuencia de animaciones de entrada
+    opacity.value = withTiming(1, { duration: 600 })
+    logoScale.value = withSpring(1, { damping: 15, stiffness: 150 })
 
-    animationSequence.start()
-
-    // Cleanup
-    return () => {
-      animationSequence.stop()
-    }
+    setTimeout(() => {
+      translateY.value = withTiming(0, { duration: 400 })
+      formTranslateY.value = withTiming(0, { duration: 400 })
+    }, 300)
   }, [])
 
   const handleLogin = async () => {
@@ -89,14 +68,10 @@ export default function LoginScreen() {
       const success = await login(email, password)
 
       if (success) {
-        // Animación de salida exitosa
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
+        opacity.value = withTiming(0, { duration: 300 })
+        setTimeout(() => {
           router.replace("/")
-        })
+        }, 300)
       } else {
         Alert.alert("Error", "Credenciales incorrectas")
       }
@@ -109,18 +84,7 @@ export default function LoginScreen() {
 
   const fillDemoCredentials = (role: "teacher" | "admin") => {
     // Animación sutil al llenar credenciales
-    Animated.sequence([
-      Animated.timing(formSlideAnim, {
-        toValue: -5,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(formSlideAnim, {
-        toValue: 0,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start()
+    formTranslateY.value = withSequence(withTiming(-5, { duration: 100 }), withTiming(0, { duration: 100 }))
 
     if (role === "teacher") {
       setEmail("carlos.mendoza@uniguajira.edu.co")
@@ -131,6 +95,26 @@ export default function LoginScreen() {
     }
   }
 
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    }
+  })
+
+  const logoAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ scale: logoScale.value }, { translateY: translateY.value }],
+    }
+  })
+
+  const formAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ translateY: formTranslateY.value }],
+    }
+  })
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -138,39 +122,23 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+        <Animated.View style={[styles.header, headerAnimatedStyle]}>
           <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
             <Ionicons name={isDark ? "sunny" : "moon"} size={24} color={colors.textSecondary} />
           </TouchableOpacity>
         </Animated.View>
 
         {/* Logo y título */}
-        <Animated.View
-          style={[
-            styles.logoSection,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: logoScaleAnim }, { translateY: slideAnim }],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.logoSection, logoAnimatedStyle]}>
           <View style={styles.logoContainer}>
             <Image source={{ uri: "https://1.bp.blogspot.com/-e5_-hSJNA9A/WrlkItaFslI/AAAAAAAAAsw/ZzGMFh1Ycrw_dQMINX37Y-QwNPoe-fLjACLcBGAs/s1600/logo-universidad-de-la-guajira.png" }} style={styles.logo} resizeMode="contain" />
           </View>
           <Text style={[styles.appTitle, { color: colors.text }]}>WajiiraLux</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Control Inteligente de Iluminación</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Control Inteligente de Laboratorios</Text>
         </Animated.View>
 
         {/* Formulario */}
-        <Animated.View
-          style={[
-            styles.formSection,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: formSlideAnim }],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.formSection, formAnimatedStyle]}>
           <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
             <Ionicons name="mail-outline" size={20} color={colors.primary} />
             <TextInput
@@ -214,15 +182,7 @@ export default function LoginScreen() {
         </Animated.View>
 
         {/* Credenciales de demo */}
-        <Animated.View
-          style={[
-            styles.demoSection,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: formSlideAnim }],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.demoSection, formAnimatedStyle]}>
           <Text style={[styles.demoTitle, { color: colors.textSecondary }]}>Credenciales de Prueba:</Text>
 
           <TouchableOpacity
@@ -248,7 +208,7 @@ export default function LoginScreen() {
   )
 }
 
-const styles = StyleSheet.create( {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -271,14 +231,18 @@ const styles = StyleSheet.create( {
   },
   logoSection: {
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 50,
   },
   logoContainer: {
-    marginLeft: 15,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     elevation: 8,
   },
   logo: {
-    width: 200,
+    width: 120,
     height: 120,
   },
   appTitle: {
@@ -351,4 +315,4 @@ const styles = StyleSheet.create( {
     marginLeft: 8,
     fontWeight: "600",
   },
-} )
+})
