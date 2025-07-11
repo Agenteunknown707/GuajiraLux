@@ -1,8 +1,6 @@
-// components/ColorWheelPicker.tsx
-
 import React, { useRef } from "react"
 import { View, PanResponder, StyleSheet } from "react-native"
-import Svg, { Defs, Circle, Path, RadialGradient, Stop } from "react-native-svg"
+import Svg, { Defs, Circle, Path, RadialGradient, Stop, LinearGradient } from "react-native-svg"
 
 const size = 200
 const radius = size / 2
@@ -49,13 +47,19 @@ export default function ColorWheelPicker({ onColorChange }: { onColorChange: (co
             <Stop offset="0%" stopColor="#fff" stopOpacity="1" />
             <Stop offset="100%" stopColor="#fff" stopOpacity="0" />
           </RadialGradient>
+          <LinearGradient id="rainbow" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="red" />
+            <Stop offset="16.6%" stopColor="orange" />
+            <Stop offset="33.3%" stopColor="yellow" />
+            <Stop offset="50%" stopColor="green" />
+            <Stop offset="66.6%" stopColor="blue" />
+            <Stop offset="83.3%" stopColor="indigo" />
+            <Stop offset="100%" stopColor="violet" />
+          </LinearGradient>
         </Defs>
         <Circle cx={radius} cy={radius} r={radius} fill="url(#grad)" />
         <Path
-          d={`
-            M ${radius} 0
-            A ${radius} ${radius} 0 1 1 ${radius - 0.01} 0
-          `}
+          d={`M ${radius} 0 A ${radius} ${radius} 0 1 1 ${radius - 0.01} 0`}
           fill="none"
           stroke="url(#rainbow)"
           strokeWidth={radius}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, Alert, Animated, Image, Dimensions, StyleSheet } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Dimensions, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "../../context/AuthContext"
 import { useLab } from "../../context/LabContext"
@@ -12,6 +12,14 @@ import { RGB_COLORS } from "../../constants/Data"
 import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
 import Slider from "@react-native-community/slider"
 import ColorWheelPicker from "../../components/ColorWheelPicker"
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  interpolate,
+} from "react-native-reanimated"
+import { useRef } from "react"
 
 const { width } = Dimensions.get("window")
 
@@ -19,14 +27,16 @@ export default function TeacherControlScreen() {
   const { user } = useAuth()
   const { labs, updateLight, activateLab, deactivateLab } = useLab()
   const { colors } = useTheme()
-
   const [showLabModal, setShowLabModal] = useState(false)
   const [selectedLabId, setSelectedLabId] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState("#FFFFFF")
   const [globalIntensity, setGlobalIntensity] = useState(100)
+  const intensityRef = useRef(globalIntensity)
 
-  const fadeAnim = new Animated.Value(0)
-  const slideAnim = new Animated.Value(50)
+  // Shared values para animaciones
+  const opacity = useSharedValue(0)
+  const translateY = useSharedValue(50)
+  const headerTranslateY = useSharedValue(-100)
 
   // Filtrar laboratorios asignados al docente
   const assignedLabs = labs.filter((lab) => user?.assignedLabs?.includes(lab.id))
@@ -34,18 +44,10 @@ export default function TeacherControlScreen() {
 
   useEffect(() => {
     if (selectedLabId) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start()
+      // Animaciones de entrada cuando se selecciona un laboratorio
+      opacity.value = withTiming(1, { duration: 500 })
+      translateY.value = withTiming(0, { duration: 500 })
+      headerTranslateY.value = withSpring(0, { damping: 15, stiffness: 150 })
     }
   }, [selectedLabId])
 
@@ -75,10 +77,12 @@ export default function TeacherControlScreen() {
           if (selectedLabId) {
             deactivateLab(selectedLabId)
           }
+          // Reset animaciones
+          opacity.value = 0
+          translateY.value = 50
+          headerTranslateY.value = -100
           setSelectedLabId(null)
           setShowLabModal(true)
-          fadeAnim.setValue(0)
-          slideAnim.setValue(50)
         },
       },
     ])
@@ -123,6 +127,35 @@ export default function TeacherControlScreen() {
     updateLight(selectedLabId, lightId, { intensity })
   }
 
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    }
+  })
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: headerTranslateY.value }],
+    }
+  })
+
+  const contentAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    }
+  })
+
+  const lightCardAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [
+        {
+          translateY: interpolate(opacity.value, [0, 1], [30, 0]),
+        },
+      ],
+    }
+  })
+
   if (!selectedLabId) {
     return (
       <LabSelectionModal
@@ -135,30 +168,25 @@ export default function TeacherControlScreen() {
     )
   }
 
+  
+
   return (
-    <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
+    <Animated.View style={[styles.container, { backgroundColor: colors.background }, containerAnimatedStyle]}>
       {/* Header */}
-      <Animated.View
-        style={[
-          styles.header,
-          { backgroundColor: colors.primary },
-          {
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-      >
+      <Animated.View style={[styles.header, { backgroundColor: colors.primary }, headerAnimatedStyle]}>
         <View style={styles.headerContent}>
-          <Image source={{ uri: "https://1.bp.blogspot.com/-e5_-hSJNA9A/WrlkItaFslI/AAAAAAAAAsw/ZzGMFh1Ycrw_dQMINX37Y-QwNPoe-fLjACLcBGAs/s1600/logo-universidad-de-la-guajira.png" }} style={styles.logo} resizeMode="contain" />
+          <Image source={{ uri: "https://s3.amazonaws.com/cdn.proxybk.com/logo-uniguajira.png" }} style={styles.logo} resizeMode="contain" />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{currentLab?.name}</Text>
             <Text style={styles.headerSubtitle}>
               {currentLab?.building} - {currentLab?.room}
             </Text>
           </View>
-          <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
-            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+           <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
+          <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
         </View>
+       
       </Animated.View>
 
       {/* Global Controls */}
@@ -167,9 +195,7 @@ export default function TeacherControlScreen() {
           styles.globalControls,
           { backgroundColor: colors.surface },
           SHADOWS.small,
-          {
-            transform: [{ translateY: slideAnim }],
-          },
+          
         ]}
       >
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Control General</Text>
@@ -191,7 +217,6 @@ export default function TeacherControlScreen() {
         </View>
 
         {/* Color Selector */}
-        {/* Color Selector */}
         <View style={styles.colorSection}>
           <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>Color Global</Text>
           <ColorWheelPicker onColorChange={(color) => setSelectedColor(color)} />
@@ -200,33 +225,32 @@ export default function TeacherControlScreen() {
 
         {/* Intensity Slider */}
        <View style={styles.intensitySection}>
-        <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
-          Intensidad Global: {globalIntensity}%
-        </Text>
-        <Slider
-          value={globalIntensity}
-          onValueChange={(value) => setGlobalIntensity(Math.round(value))}
-          minimumValue={0}
-          maximumValue={100}
-          step={1}
-          minimumTrackTintColor={colors.primary}
-          maximumTrackTintColor="#ccc"
-          thumbTintColor={colors.primary}
-          style={{ width: '100%', height: 40 }}
-        />
-      </View>
+  <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
+    Intensidad Global: {Math.round(intensityRef.current)}%
+  </Text>
+  <Slider
+    value={intensityRef.current}
+    onValueChange={(value) => {
+      intensityRef.current = value
+    }}
+    onSlidingComplete={(value) => {
+      setGlobalIntensity(Math.round(value))
+    }}
+    minimumValue={0}
+    maximumValue={100}
+    step={1}
+    minimumTrackTintColor={colors.primary}
+    maximumTrackTintColor="#ccc"
+    thumbTintColor={colors.primary}
+    style={{ width: "100%", height: 40 }}
+  />
+</View>
+
       </Animated.View>
 
       {/* Lights Grid */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Animated.View
-          style={[
-            styles.lightsSection,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <Animated.View style={[styles.lightsSection, contentAnimatedStyle]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             Focos Individuales ({currentLab?.lights.filter((l) => l.isOn).length}/{currentLab?.lights.length})
           </Text>
@@ -239,17 +263,7 @@ export default function TeacherControlScreen() {
                   styles.lightCard,
                   { backgroundColor: colors.surface, borderColor: colors.border },
                   SHADOWS.small,
-                  {
-                    opacity: fadeAnim,
-                    transform: [
-                      {
-                        translateY: fadeAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [30, 0],
-                        }),
-                      },
-                    ],
-                  },
+                  lightCardAnimatedStyle,
                 ]}
               >
                 {/* Light Header */}
@@ -331,7 +345,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 50,
-    paddingBottom: 20,
+    paddingBottom: 10,
     paddingHorizontal: SIZES.lg,
   },
   headerContent: {
@@ -342,11 +356,9 @@ const styles = StyleSheet.create({
   logo: {
     width: 80,
     height: 60,
-    marginRight: SIZES.md,
     backgroundColor: "rgb(255, 255, 255)",
-    borderRadius: SIZES.borderRadius,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    marginRight: SIZES.md,
+    borderRadius: SIZES.borderRadiusSmall,
   },
   headerText: {
     flex: 1,

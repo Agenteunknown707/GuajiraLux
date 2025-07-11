@@ -4,12 +4,10 @@ import { useEffect, useRef } from "react"
 import { View, Text, ActivityIndicator, Animated, Image, StyleSheet } from "react-native"
 import { useRouter } from "expo-router"
 import { useAuth } from "../context/AuthContext"
-import { useTheme } from "../context/ThemeContext"
 import { SIZES } from "../constants/Colors"
 
 export default function Index() {
   const { user, isLoading } = useAuth()
-  const { colors } = useTheme()
   const router = useRouter()
 
   const fadeAnim = useRef(new Animated.Value(0)).current
@@ -59,11 +57,6 @@ export default function Index() {
     }
   }, [user, isLoading, router])
 
-  const logoRotation = logoRotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  })
-
   return (
     <View style={[styles.container, { backgroundColor: "#FFFFFFF" }]}>
       <Animated.View
@@ -77,7 +70,7 @@ export default function Index() {
       >
           <Image source={{ uri: "https://1.bp.blogspot.com/-e5_-hSJNA9A/WrlkItaFslI/AAAAAAAAAsw/ZzGMFh1Ycrw_dQMINX37Y-QwNPoe-fLjACLcBGAs/s1600/logo-universidad-de-la-guajira.png" }} style={styles.logo} resizeMode="contain" />
         <Text style={styles.appTitle}>WajiiraLux</Text>
-        <Text style={styles.subtitle}>Control Inteligente de Laboratorios</Text>
+        <Text style={styles.subtitle}>Control Inteligente de Iluminación</Text>
       </Animated.View>
 
       <Animated.View style={[styles.loadingContainer, { opacity: fadeAnim }]}>
@@ -121,7 +114,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   loadingText: {
-    color: "#FFFFFF",
+    color: "#000000",
     marginTop: 16,
     fontSize: 16,
   },

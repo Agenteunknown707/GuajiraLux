@@ -1,8 +1,9 @@
 "use client"
 
 import type React from "react"
-import { TouchableOpacity, Text, Animated, type ViewStyle, type TextStyle } from "react-native"
-import { COLORS, SIZES, ANIMATIONS, FONTS } from "../constants/Colors"
+import { TouchableOpacity, Text, type ViewStyle, type TextStyle } from "react-native"
+import { COLORS, SIZES, FONTS } from "../constants/Colors"
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from "react-native-reanimated"
 
 interface AnimatedButtonProps {
   title: string
@@ -25,23 +26,25 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   size = "medium",
   loading = false,
 }) => {
-  const scaleValue = new Animated.Value(1)
+  const scale = useSharedValue(1)
+  const opacity = useSharedValue(1)
 
   const handlePressIn = () => {
-    Animated.spring(scaleValue, {
-      toValue: 0.95,
-      duration: ANIMATIONS.duration.fast,
-      useNativeDriver: true,
-    }).start()
+    scale.value = withSpring(0.95, { damping: 15, stiffness: 300 })
+    opacity.value = withTiming(0.8, { duration: 100 })
   }
 
   const handlePressOut = () => {
-    Animated.spring(scaleValue, {
-      toValue: 1,
-      duration: ANIMATIONS.duration.fast,
-      useNativeDriver: true,
-    }).start()
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 })
+    opacity.value = withTiming(1, { duration: 100 })
   }
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+    }
+  })
 
   const getButtonStyle = () => {
     const baseStyle = {
@@ -106,14 +109,14 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   }
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+    <Animated.View style={animatedStyle}>
       <TouchableOpacity
         style={[getButtonStyle(), style]}
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
-        activeOpacity={0.8}
+        activeOpacity={1}
       >
         <Text style={[getTextStyle(), textStyle]}>{loading ? "Cargando..." : title}</Text>
       </TouchableOpacity>

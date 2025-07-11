@@ -1,11 +1,13 @@
 "use client"
 
-import React from "react"
-import { Modal, View, Text, TouchableOpacity, ScrollView, Animated, Dimensions, StyleSheet } from "react-native"
+import type React from "react"
+import { useEffect } from "react"
+import { Modal, View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../context/ThemeContext"
 import { SIZES, FONTS, SHADOWS } from "../constants/Colors"
 import { AnimatedButton } from "./AnimatedButton"
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from "react-native-reanimated"
 
 interface Lab {
   id: string
@@ -34,36 +36,17 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
   currentUserId,
 }) => {
   const { colors } = useTheme()
-  const slideAnim = new Animated.Value(height)
-  const opacityAnim = new Animated.Value(0)
 
-  React.useEffect(() => {
+  const translateY = useSharedValue(height)
+  const opacity = useSharedValue(0)
+
+  useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]).start()
+      opacity.value = withTiming(1, { duration: 400 })
+      translateY.value = withTiming(0, { duration: 400 })
     } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: height,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start()
+      opacity.value = withTiming(0, { duration: 300 })
+      translateY.value = withTiming(height, { duration: 300 })
     }
   }, [visible])
 
@@ -73,25 +56,33 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
     return { status: "occupied", color: colors.warning, text: "Ocupado" }
   }
 
+  const overlayAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    }
+  })
+
+  const modalAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    }
+  })
+
+  const labCardAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [
+        {
+          translateX: interpolate(opacity.value, [0, 1], [50, 0]),
+        },
+      ],
+    }
+  })
+
   return (
     <Modal visible={visible} transparent={true} animationType="none" onRequestClose={onClose}>
-      <Animated.View
-        style={[
-          styles.overlay,
-          {
-            opacity: opacityAnim,
-          },
-        ]}
-      >
-        <Animated.View
-          style={[
-            styles.modalContainer,
-            {
-              backgroundColor: colors.background,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+      <Animated.View style={[styles.overlay, overlayAnimatedStyle]}>
+        <Animated.View style={[styles.modalContainer, { backgroundColor: colors.background }, modalAnimatedStyle]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <View style={styles.headerContent}>
@@ -117,22 +108,7 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
               const isSelectable = labStatus.status !== "occupied"
 
               return (
-                <Animated.View
-                  key={lab.id}
-                  style={[
-                    {
-                      opacity: opacityAnim,
-                      transform: [
-                        {
-                          translateX: opacityAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [50, 0],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
+                <Animated.View key={lab.id} style={labCardAnimatedStyle}>
                   <TouchableOpacity
                     style={[
                       styles.labCard,
