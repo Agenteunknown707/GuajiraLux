@@ -1,47 +1,41 @@
-// Paleta de colores extraída del logo oficial de la Universidad de La Guajira
+// Paleta de colores institucional con modo oscuro
 export const COLORS = {
-  // Colores principales del logo UniGuajira
-  primary: "#00BFD8", // Turquesa principal del logo
-  secondary: "#FF6B35", // Naranja/Coral del texto inferior
-  accent: "#FFC107", // Amarillo dorado del diseño geométrico
-  tertiary: "#4CAF50", // Verde del diseño geométrico
-  quaternary: "#E91E63", // Rosa/magenta del diseño
-
-  // Variaciones de los colores principales
+  // Colores principales
+  primary: "#00BFD8",       // Turquesa institucional
+  secondary: "#FF6A6A",     // Rojo coral
+  accent: "#FBB03B",        // Amarillo complementario
+  
+  // Colores de fondo
+  background: "#121212",    // Fondo oscuro principal
+  surface: "#1E1E1E",       // Superficie de componentes
+  surfaceVariant: "#2D2D2D", // Variante de superficie
+  surfaceHighlight: "#383838", // Para resaltar elementos
+  
+  // Texto y bordes
+  text: "#FFFFFF",          // Texto principal
+  textSecondary: "#B0B0B0",  // Texto secundario
+  textTertiary: "#888888",   // Texto terciario/deshabilitado
+  border: "#444444",        // Bordes y separadores
+  
+  // Estados y retroalimentación
+  success: "#4CAF50",       // Éxito
+  warning: "#FFC107",       // Advertencia
+  error: "#F44336",         // Error
+  info: "#2196F3",          // Información
+  
+  // Variaciones para interactividad
   primaryLight: "#4DD0E1",
-  primaryDark: "#00ACC1",
-  secondaryLight: "#FF8A65",
-  secondaryDark: "#F4511E",
+  primaryDark: "#008BA3",
+  secondaryLight: "#FF8A80",
+  secondaryDark: "#C62828",
   accentLight: "#FFD54F",
-  accentDark: "#FFA000",
-
-  // Colores del sistema
-  background: "#FFFFFF",
-  surface: "#F8F9FA",
-  surfaceVariant: "#F1F3F4",
-  text: "#212121",
-  textSecondary: "#757575",
-  textTertiary: "#9E9E9E",
-  border: "#E0E0E0",
-  borderLight: "#F0F0F0",
-  success: "#4CAF50",
-  warning: "#FF9800",
-  error: "#F44336",
-  info: "#2196F3",
-
-  // Modo oscuro
-  darkBackground: "#121212",
-  darkSurface: "#1E1E1E",
-  darkSurfaceVariant: "#2C2C2C",
-  darkText: "#FFFFFF",
-  darkTextSecondary: "#CCCCCC",
-  darkTextTertiary: "#999999",
-  darkBorder: "#333333",
-
-  // Gradientes basados en el logo
-  primaryGradient: ["#00BFD8", "#00ACC1"],
-  secondaryGradient: ["#FF6B35", "#F4511E"],
-  accentGradient: ["#FFC107", "#FFA000"],
+  accentDark: "#FF8F00",
+  borderLight: "#444444",
+  
+  // Gradientes
+  primaryGradient: ["#00BFD8", "#008BA3"],
+  secondaryGradient: ["#FF6A6A", "#C62828"],
+  accentGradient: ["#FBB03B", "#FF8F00"],
   logoGradient: ["#00BFD8", "#FF6B35", "#FFC107", "#4CAF50"],
 }
 

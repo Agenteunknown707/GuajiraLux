@@ -1,13 +1,13 @@
 "use client"
 
+import { Ionicons } from "@expo/vector-icons"
 import type React from "react"
 import { useEffect } from "react"
-import { Modal, View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
+import { Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
+import { FONTS, SHADOWS, SIZES } from "../constants/Colors"
 import { useTheme } from "../context/ThemeContext"
-import { SIZES, FONTS, SHADOWS } from "../constants/Colors"
 import { AnimatedButton } from "./AnimatedButton"
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from "react-native-reanimated"
 
 interface Lab {
   id: string

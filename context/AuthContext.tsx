@@ -21,7 +21,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ success: boolean; role?: 'teacher' | 'admin' }>
   logout: () => Promise<void>
   isLoading: boolean
 }
@@ -52,17 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; role?: 'teacher' | 'admin' }> => {
     try {
       // Simular autenticación con datos mock
       const foundUser = MOCK_USERS.find((u) => u.email === email && u.password === password)
 
       if (foundUser) {
-        const userSession = {
+        const userSession: User = {
           id: foundUser.id,
           email: foundUser.email,
           name: foundUser.name,
-          role: foundUser.role,
+          role: foundUser.role as 'teacher' | 'admin',
           assignedLabs: foundUser.assignedLabs,
           firstName: foundUser.firstName,
           lastName: foundUser.lastName,
@@ -74,12 +74,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUser(userSession)
         await AsyncStorage.setItem("user", JSON.stringify(userSession))
-        return true
+        
+        // Return the user role to handle navigation in the login screen
+        return { success: true, role: userSession.role }
       }
-      return false
+      return { success: false }
     } catch (error) {
       console.error("Error during login:", error)
-      return false
+      return { success: false }
     }
   }
 

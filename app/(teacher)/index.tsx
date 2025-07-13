@@ -1,24 +1,24 @@
 "use client"
 
-import { useState, useEffect, useRef} from "react"
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Dimensions, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import Slider from "@react-native-community/slider"
+import { useEffect, useRef, useState } from "react"
+import { Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import Animated, {
+    interpolate,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+    withTiming,
+} from "react-native-reanimated"
+import { AnimatedButton } from "../../components/AnimatedButton"
+import ColorWheelPicker from "../../components/ColorWheelPicker"
+import { LabSelectionModal } from "../../components/LabSelectionModal"
+import { FONTS, SHADOWS, SIZES } from "../../constants/Colors"
+import { RGB_COLORS } from "../../constants/Data"
 import { useAuth } from "../../context/AuthContext"
 import { useLab } from "../../context/LabContext"
 import { useTheme } from "../../context/ThemeContext"
-import { LabSelectionModal } from "../../components/LabSelectionModal"
-import { AnimatedButton } from "../../components/AnimatedButton"
-import { RGB_COLORS } from "../../constants/Data"
-import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
-import Slider from "@react-native-community/slider"
-import ColorWheelPicker from "../../components/ColorWheelPicker"
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  interpolate,
-} from "react-native-reanimated"
 
 const { width } = Dimensions.get("window")
 

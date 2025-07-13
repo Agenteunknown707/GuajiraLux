@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, Alert, Modal, StyleSheet } from "react-native"
-import Slider from "@react-native-community/slider"
 import { Ionicons } from "@expo/vector-icons"
-import { useRouter, useLocalSearchParams } from "expo-router"
+import Slider from "@react-native-community/slider"
+import { useLocalSearchParams, useRouter } from "expo-router"
+import { useEffect, useState } from "react"
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { SIZES } from "../../../constants/Colors"
+import { RGB_COLORS } from "../../../constants/Data"
 import { useLab } from "../../../context/LabContext"
 import { useTheme } from "../../../context/ThemeContext"
-import { RGB_COLORS } from "../../../constants/Data"
-import { SIZES } from "../../../constants/Colors"
 
 export default function LabControlScreen() {
   const { labId } = useLocalSearchParams<{ labId: string }>()

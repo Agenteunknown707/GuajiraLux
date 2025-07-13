@@ -10,15 +10,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Dimensions,
+  StatusBar,
   Image,
   StyleSheet,
+
 } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { useRouter } from "expo-router"
+import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from "../../context/AuthContext"
 import { useTheme } from "../../context/ThemeContext"
-import { SIZES } from "../../constants/Colors"
+import { COLORS } from "../../constants/Colors"
+import { useRouter } from "expo-router"
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -27,7 +29,7 @@ import Animated, {
   withSequence,
 } from "react-native-reanimated"
 
-const { width, height } = Dimensions.get("window")
+// Screen width can be used for responsive layouts if needed
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("")
@@ -48,35 +50,43 @@ export default function LoginScreen() {
   useEffect(() => {
     // Secuencia de animaciones de entrada
     opacity.value = withTiming(1, { duration: 600 })
-    logoScale.value = withSpring(1, { damping: 15, stiffness: 150 })
+    translateY.value = withTiming(0, { duration: 600 })
+    logoScale.value = withSpring(1, { damping: 10 })
+    formTranslateY.value = withTiming(0, { duration: 600 })
 
-    setTimeout(() => {
-      translateY.value = withTiming(0, { duration: 400 })
-      formTranslateY.value = withTiming(0, { duration: 400 })
-    }, 300)
-  }, [])
+    const timer = setTimeout(() => {
+      translateY.value = withSequence(
+        withTiming(-10, { duration: 100 }), 
+        withSpring(0, { damping: 15 })
+      )
+    }, 800)
+
+    return () => clearTimeout(timer)
+  }, [opacity, translateY, logoScale, formTranslateY])
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Por favor completa todos los campos")
+      Alert.alert("Error", "Por favor ingresa tu correo y contraseña")
       return
     }
 
     setIsLoading(true)
 
     try {
-      const success = await login(email, password)
-
-      if (success) {
-        opacity.value = withTiming(0, { duration: 300 })
-        setTimeout(() => {
-          router.replace("/")
-        }, 300)
+      const result = await login(email, password)
+      if (result.success) {
+        // Navegar a la pantalla correspondiente según el rol
+        if (result.role === 'teacher') {
+          router.replace('/(teacher)')
+        } else if (result.role === 'admin') {
+          router.replace('/(admin)')
+        }
       } else {
-        Alert.alert("Error", "Credenciales incorrectas")
+        Alert.alert("Error", "Credenciales incorrectas. Por favor, inténtalo de nuevo.")
       }
-    } catch (error) {
-      Alert.alert("Error", "Ocurrió un error durante el inicio de sesión")
+    } catch (err) {
+      console.error('Login error:', err)
+      Alert.alert("Error", "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.")
     } finally {
       setIsLoading(false)
     }
@@ -116,95 +126,123 @@ export default function LoginScreen() {
   })
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <Animated.View style={[styles.header, headerAnimatedStyle]}>
-          <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-            <Ionicons name={isDark ? "sunny" : "moon"} size={24} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Logo y título */}
-        <Animated.View style={[styles.logoSection, logoAnimatedStyle]}>
-          <View style={styles.logoContainer}>
-            <Image source={{ uri: "https://1.bp.blogspot.com/-e5_-hSJNA9A/WrlkItaFslI/AAAAAAAAAsw/ZzGMFh1Ycrw_dQMINX37Y-QwNPoe-fLjACLcBGAs/s1600/logo-universidad-de-la-guajira.png" }} style={styles.logo} resizeMode="contain" />
-          </View>
-          <Text style={[styles.appTitle, { color: colors.text }]}>WajiiraLux</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Control Inteligente de Laboratorios</Text>
-        </Animated.View>
-
-        {/* Formulario */}
-        <Animated.View style={[styles.formSection, formAnimatedStyle]}>
-          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-            <Ionicons name="mail-outline" size={20} color={colors.primary} />
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder="Correo electrónico"
-              placeholderTextColor={colors.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-            <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder="Contraseña"
-              placeholderTextColor={colors.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Ionicons
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
-                size={20}
-                color={colors.textSecondary}
-              />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={[COLORS.primaryDark, COLORS.background]}
+        style={StyleSheet.absoluteFill}
+      />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
+          <Animated.View style={[styles.header, headerAnimatedStyle]}>
+            <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
+              <Ionicons name={isDark ? "sunny" : "moon"} size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-          </View>
+          </Animated.View>
 
-          <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: colors.primary }]}
-            onPress={handleLogin}
-            disabled={isLoading}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.loginButtonText}>{isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}</Text>
-          </TouchableOpacity>
-        </Animated.View>
+          {/* Logo y título */}
+          <Animated.View style={[styles.logoSection, logoAnimatedStyle]}>
+            <View style={styles.logoContainer}>
+              <Image source={{ uri: "https://1.bp.blogspot.com/-e5_-hSJNA9A/WrlkItaFslI/AAAAAAAAAsw/ZzGMFh1Ycrw_dQMINX37Y-QwNPoe-fLjACLcBGAs/s1600/logo-universidad-de-la-guajira.png" }} style={styles.logo} resizeMode="contain" />
+            </View>
+            <Text style={[styles.appTitle, { color: colors.text }]}>WajiiraLux</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Control Inteligente de Laboratorios</Text>
+          </Animated.View>
 
-        {/* Credenciales de demo */}
-        <Animated.View style={[styles.demoSection, formAnimatedStyle]}>
-          <Text style={[styles.demoTitle, { color: colors.textSecondary }]}>Credenciales de Prueba:</Text>
+          {/* Formulario */}
+          <Animated.View style={[styles.card, formAnimatedStyle]}>
+            <Text style={styles.loginTitle}>Iniciar Sesión</Text>
+            
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="email" size={24} color={COLORS.primary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Correo electrónico"
+                placeholderTextColor={COLORS.textTertiary}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
 
-          <TouchableOpacity
-            style={[styles.demoButton, { backgroundColor: colors.secondary }]}
-            onPress={() => fillDemoCredentials("teacher")}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="school-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.demoButtonText}>Docente</Text>
-          </TouchableOpacity>
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <MaterialIcons name="lock-outline" size={24} color={COLORS.primary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Contraseña"
+                placeholderTextColor={COLORS.textTertiary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <MaterialIcons
+                  name={showPassword ? "visibility-off" : "visibility"}
+                  size={24}
+                  color={COLORS.textSecondary}
+                />
+              </TouchableOpacity>
+            </View>
 
-          <TouchableOpacity
-            style={[styles.demoButton, { backgroundColor: colors.accent }]}
-            onPress={() => fillDemoCredentials("admin")}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
-            <Text style={styles.demoButtonText}>Administrador</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {/* Login Button */}
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={handleLogin}
+              disabled={isLoading}
+              activeOpacity={0.9}
+            >
+              <Ionicons 
+                name={isLoading ? "hourglass-outline" : "log-in-outline"} 
+                size={20} 
+                color="#FFFFFF" 
+                style={styles.buttonIcon} 
+              />
+              <Text style={styles.loginButtonText}>
+                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Credenciales de demo */}
+          <Animated.View style={[styles.demoSection, formAnimatedStyle]}>
+            <Text style={[styles.demoTitle, { color: colors.textSecondary }]}>Credenciales de Prueba:</Text>
+
+            <TouchableOpacity
+              style={[styles.demoButton, { backgroundColor: colors.secondary }]}
+              onPress={() => fillDemoCredentials("teacher")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="school-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.demoButtonText}>Docente</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.demoButton, { backgroundColor: colors.accent }]}
+              onPress={() => fillDemoCredentials("admin")}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="settings-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.demoButtonText}>Administrador</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   )
 }
 
@@ -212,38 +250,62 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  keyboardView: {
+    flex: 1,
+  },
   scrollContainer: {
     flexGrow: 1,
-    padding: SIZES.padding,
+    padding: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     justifyContent: "center",
   },
+  card: {
+    backgroundColor: 'rgba(30, 30, 30, 0.9)',
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 5,
+  },
   header: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginBottom: 20,
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 1,
+    width: '100%',
+    alignItems: 'flex-end',
+    marginBottom: 10,
+    paddingTop: Platform.OS === 'ios' ? 10 : 0,
   },
   themeToggle: {
-    padding: 8,
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   logoSection: {
     alignItems: "center",
     marginBottom: 50,
   },
   logoContainer: {
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: '75%',
+    height: '75%',
+    resizeMode: 'contain',
   },
   appTitle: {
     fontSize: 32,
@@ -252,19 +314,40 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    textAlign: "center",
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  loginTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 24,
+    textAlign: 'center',
   },
   formSection: {
-    marginBottom: 40,
+    width: "100%",
   },
   inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: SIZES.borderRadius,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceVariant,
+    borderRadius: 12,
+    paddingHorizontal: 15,
     marginBottom: 20,
+    height: 56,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  eyeIcon: {
+    padding: 8,
+    marginRight: -8,
+  },
+  buttonIcon: {
+    marginRight: 10,
   },
   input: {
     flex: 1,
@@ -272,7 +355,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   loginButton: {
-    borderRadius: SIZES.borderRadius,
+    borderRadius: 12,
     paddingVertical: 18,
     alignItems: "center",
     marginTop: 10,
@@ -292,23 +375,24 @@ const styles = StyleSheet.create({
   },
   demoTitle: {
     fontSize: 14,
-    marginBottom: 20,
-    fontWeight: "500",
+    marginBottom: 12,
+    textAlign: 'center',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   demoButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: SIZES.borderRadius,
-    marginBottom: 12,
-    minWidth: 180,
-    justifyContent: "center",
-    shadowColor: "#000",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    margin: 6,
+    minWidth: 140,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 3,
   },
   demoButtonText: {
     color: "#FFFFFF",
