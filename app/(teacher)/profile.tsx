@@ -79,6 +79,7 @@ export default function TeacherProfileScreen() {
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Image source={{ uri: "https://s3.amazonaws.com/cdn.proxybk.com/logo-uniguajira.png" }} style={styles.logo} resizeMode="contain" />
         <View style={styles.headerText}>
+          <Text style={styles.headerespacio}></Text>
             <Text style={styles.headerTitle}>Mi Perfil</Text>
             <Text style={styles.headerSubtitle}>Docente</Text>
         </View>
@@ -505,19 +506,20 @@ const styles = StyleSheet.create({
   },
   headerText: {
     marginLeft: SIZES.md,
-    flex: 1,
-    justifyContent: "center" as const,
-    alignItems: "flex-start" as const,
   },
   headerTitle: {
     color: "#FFFFFF",
     fontSize: FONTS.size.xl,
     fontWeight: FONTS.weight.bold as any,
     marginBottom: SIZES.xs,
+    alignContent: "center" as const,
   },
   headerSubtitle: {
     color: "rgba(255, 255, 255, 0.8)",
     fontSize: FONTS.size.sm,
+  },
+  headerespacio: {
+    fontSize: 5,
   },
   content: {
     flex: 1,

@@ -38,7 +38,7 @@ export default function AdminLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Resumen",
+          title: "Analíticas",
           tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
         }}
       />
@@ -54,13 +54,6 @@ export default function AdminLayout() {
         options={{
           title: "Laboratorios",
           tabBarIcon: ({ color, size }) => <Ionicons name="business-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="analytics"
-        options={{
-          title: "Analíticas",
-          tabBarIcon: ({ color, size }) => <Ionicons name="analytics-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

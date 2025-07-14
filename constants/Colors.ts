@@ -14,7 +14,7 @@ export const COLORS = {
   // Texto y bordes
   text: "#FFFFFF",          // Texto principal
   textSecondary: "#B0B0B0",  // Texto secundario
-  textTertiary: "#888888",   // Texto terciario/deshabilitado
+  textTertiary: "#f1e8e8ff",   // Texto terciario/deshabilitado
   border: "#444444",        // Bordes y separadores
   
   // Estados y retroalimentación

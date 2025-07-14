@@ -154,7 +154,7 @@ export default function LoginScreen() {
               <Image source={{ uri: "https://1.bp.blogspot.com/-e5_-hSJNA9A/WrlkItaFslI/AAAAAAAAAsw/ZzGMFh1Ycrw_dQMINX37Y-QwNPoe-fLjACLcBGAs/s1600/logo-universidad-de-la-guajira.png" }} style={styles.logo} resizeMode="contain" />
             </View>
             <Text style={[styles.appTitle, { color: colors.text }]}>WajiiraLux</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Control Inteligente de Laboratorios</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Control Inteligente de Iluminación</Text>
           </Animated.View>
 
           {/* Formulario */}
@@ -206,12 +206,6 @@ export default function LoginScreen() {
               disabled={isLoading}
               activeOpacity={0.9}
             >
-              <Ionicons 
-                name={isLoading ? "hourglass-outline" : "log-in-outline"} 
-                size={20} 
-                color="#FFFFFF" 
-                style={styles.buttonIcon} 
-              />
               <Text style={styles.loginButtonText}>
                 {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Text>
@@ -303,9 +297,9 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   logo: {
-    width: '75%',
-    height: '75%',
-    resizeMode: 'contain',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'center',
   },
   appTitle: {
     fontSize: 32,
@@ -353,22 +347,22 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
     fontSize: 16,
+    color: COLORS.text,
   },
   loginButton: {
-    borderRadius: 12,
     paddingVertical: 18,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 5,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
     elevation: 8,
+    height: 66,
+    borderRadius: 12,
   },
   loginButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
+    marginTop: 10,
   },
   demoSection: {
     alignItems: "center",
