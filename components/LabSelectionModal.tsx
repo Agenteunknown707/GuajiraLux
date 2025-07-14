@@ -3,11 +3,12 @@
 import { Ionicons } from "@expo/vector-icons"
 import type React from "react"
 import { useEffect } from "react"
-import { Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native"
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 import { FONTS, SHADOWS, SIZES } from "../constants/Colors"
 import { useTheme } from "../context/ThemeContext"
 import { AnimatedButton } from "./AnimatedButton"
+import { router } from "expo-router"
 
 interface Lab {
   id: string
@@ -79,6 +80,13 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
     }
   })
 
+  const handleLogout = () => {
+      
+    router.replace("/(auth)/login")
+    Alert.alert("Sesión cerrada", "Has cerrado sesión correctamente.")
+    onClose()
+  }
+
   return (
     <Modal visible={visible} transparent={true} animationType="none" onRequestClose={onClose}>
       <Animated.View style={[styles.overlay, overlayAnimatedStyle]}>
@@ -146,7 +154,7 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
 
           {/* Footer */}
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
-            <AnimatedButton title="Cancelar" onPress={onClose} variant="outline" />
+            <AnimatedButton title="Cerrar sesión" onPress={handleLogout} variant="outline" />
           </View>
         </Animated.View>
       </Animated.View>
