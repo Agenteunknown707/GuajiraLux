@@ -230,15 +230,14 @@ export default function TeacherControlScreen() {
           <AnimatedButton
             title="Encender/Apagar Todo"
             onPress={handleToggleAllLights}
-            variant="secondary"
-            size="small"
-            style={[styles.controlButton, { flex: 1, marginRight: SIZES.sm }]}
+            variant="primary"
+            size="medium"
           />
           <AnimatedButton
             title="Aplicar Config."
             onPress={handleApplyGlobalSettings}
-            size="small"
-            style={[styles.controlButton, { flex: 1, marginLeft: SIZES.sm }]}
+            variant="secondary"
+            size="medium"
           />
         </View>
 
@@ -431,14 +430,6 @@ const styles = StyleSheet.create({
   clearPracticeButton: {
     marginLeft: SIZES.xs,
   },
-  exitButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
   globalControls: {
     margin: SIZES.lg,
     padding: SIZES.lg,
@@ -473,7 +464,7 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.lg,
   },
   controlButton: {
-    borderRadius: SIZES.borderRadiusSmall,
+    height: 88,
   },
   controlLabel: {
     fontSize: FONTS.size.sm,
