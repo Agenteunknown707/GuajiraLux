@@ -1,36 +1,43 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Dimensions, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import Slider from "@react-native-community/slider"
-import { useEffect, useRef, useState } from "react"
-import { Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
-import Animated, {
-    interpolate,
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-    withTiming,
-} from "react-native-reanimated"
-import { AnimatedButton } from "../../components/AnimatedButton"
-import ColorWheelPicker from "../../components/ColorWheelPicker"
-import { LabSelectionModal } from "../../components/LabSelectionModal"
-import { FONTS, SHADOWS, SIZES } from "../../constants/Colors"
-import { RGB_COLORS } from "../../constants/Data"
 import { useAuth } from "../../context/AuthContext"
 import { useLab } from "../../context/LabContext"
 import { useTheme } from "../../context/ThemeContext"
+import { LabSelectionModal } from "../../components/LabSelectionModal"
+import { AnimatedButton } from "../../components/AnimatedButton"
+import { RGB_COLORS } from "../../constants/Data"
+import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  interpolate,
+} from "react-native-reanimated"
 
 const { width } = Dimensions.get("window")
 
 export default function TeacherControlScreen() {
   const { user } = useAuth()
-  const { labs, updateLight, activateLab, deactivateLab } = useLab()
+  const {
+    labs,
+    practices,
+    updateLight,
+    activateLab,
+    deactivateLab,
+    toggleAllLights,
+    applyGlobalSettings,
+    clearActivePractice,
+  } = useLab()
   const { colors } = useTheme()
+
   const [showLabModal, setShowLabModal] = useState(false)
   const [selectedLabId, setSelectedLabId] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState("#FFFFFF")
   const [globalIntensity, setGlobalIntensity] = useState(100)
-  const intensityRef = useRef(globalIntensity)
 
   // Shared values para animaciones
   const opacity = useSharedValue(0)
@@ -40,6 +47,9 @@ export default function TeacherControlScreen() {
   // Filtrar laboratorios asignados al docente
   const assignedLabs = labs.filter((lab) => user?.assignedLabs?.includes(lab.id))
   const currentLab = selectedLabId ? labs.find((l) => l.id === selectedLabId) : null
+
+  // Obtener la práctica activa
+  const activePractice = currentLab?.activePractice ? practices.find((p) => p.id === currentLab.activePractice) : null
 
   useEffect(() => {
     if (selectedLabId) {
@@ -87,25 +97,15 @@ export default function TeacherControlScreen() {
     ])
   }
 
-  const toggleAllLights = () => {
+  const handleToggleAllLights = () => {
     if (!currentLab || !selectedLabId) return
-
     const allOn = currentLab.lights.every((light) => light.isOn)
-    currentLab.lights.forEach((light) => {
-      updateLight(selectedLabId, light.id, { isOn: !allOn })
-    })
+    toggleAllLights(selectedLabId, !allOn)
   }
 
-  const applyGlobalSettings = () => {
+  const handleApplyGlobalSettings = () => {
     if (!currentLab || !selectedLabId) return
-
-    currentLab.lights.forEach((light) => {
-      updateLight(selectedLabId, light.id, {
-        isOn: true,
-        color: selectedColor,
-        intensity: globalIntensity,
-      })
-    })
+    applyGlobalSettings(selectedLabId, selectedColor, globalIntensity)
   }
 
   const handleLightToggle = (lightId: string) => {
@@ -124,6 +124,23 @@ export default function TeacherControlScreen() {
   const handleLightIntensityChange = (lightId: string, intensity: number) => {
     if (!selectedLabId) return
     updateLight(selectedLabId, lightId, { intensity })
+  }
+
+  const handleClearActivePractice = () => {
+    if (!selectedLabId) return
+    Alert.alert(
+      "Limpiar Práctica Activa",
+      "¿Deseas limpiar la práctica activa? Esto no afectará la configuración actual de los focos.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Limpiar",
+          onPress: () => {
+            clearActivePractice(selectedLabId)
+          },
+        },
+      ],
+    )
   }
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
@@ -167,90 +184,113 @@ export default function TeacherControlScreen() {
     )
   }
 
-  
-
   return (
     <Animated.View style={[styles.container, { backgroundColor: colors.background }, containerAnimatedStyle]}>
       {/* Header */}
       <Animated.View style={[styles.header, { backgroundColor: colors.primary }, headerAnimatedStyle]}>
         <View style={styles.headerContent}>
-          <Image source={{ uri: "https://s3.amazonaws.com/cdn.proxybk.com/logo-uniguajira.png" }} style={styles.logo} resizeMode="contain" />
+          <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{currentLab?.name}</Text>
             <Text style={styles.headerSubtitle}>
               {currentLab?.building} - {currentLab?.room}
             </Text>
+            {/* Mostrar práctica activa */}
+            {activePractice && (
+              <View style={styles.activePracticeContainer}>
+                <Ionicons name="flask" size={16} color="rgba(255, 255, 255, 0.9)" />
+                <Text style={styles.activePracticeText}>{activePractice.name}</Text>
+                <TouchableOpacity onPress={handleClearActivePractice} style={styles.clearPracticeButton}>
+                  <Ionicons name="close-circle" size={16} color="rgba(255, 255, 255, 0.8)" />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-           <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
+        </View>
+        <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
           <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        </View>
       </Animated.View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
       {/* Global Controls */}
       <Animated.View
-        style={[
-          styles.globalControls,
-          { backgroundColor: colors.surface },
-          SHADOWS.small,
-          
-        ]}
+        style={[styles.globalControls, SHADOWS.medium, contentAnimatedStyle]}
       >
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Control General</Text>
+        <View style={styles.controlHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Control General</Text>
+          <View style={styles.statusIndicator}>
+            <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+            <Text style={[styles.statusText, { color: colors.textSecondary }]}>
+              {currentLab?.lights.filter((l) => l.isOn).length}/{currentLab?.lights.length} activos
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.controlRow}>
           <AnimatedButton
             title="Encender/Apagar Todo"
-            onPress={toggleAllLights}
-            variant="primary"
-            size="medium"
+            onPress={handleToggleAllLights}
+            variant="secondary"
+            size="small"
+            style={[styles.controlButton, { flex: 1, marginRight: SIZES.sm }]}
           />
           <AnimatedButton
-            title="Aplicar Configuración"
-            onPress={applyGlobalSettings}
-            size="medium"
-            style={{ flex: 1, marginLeft: SIZES.sm }}
-            variant="secondary"
+            title="Aplicar Config."
+            onPress={handleApplyGlobalSettings}
+            size="small"
+            style={[styles.controlButton, { flex: 1, marginLeft: SIZES.sm }]}
           />
         </View>
 
         {/* Color Selector */}
         <View style={styles.colorSection}>
           <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>Color Global</Text>
-          <ColorWheelPicker onColorChange={(color) => setSelectedColor(color)} />
-          <Text style={{ textAlign: "center", color: colors.text }}>Color seleccionado: {selectedColor}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorPicker}>
+            {RGB_COLORS.map((color) => (
+              <TouchableOpacity
+                key={color.value}
+                style={[
+                  styles.colorOption,
+                  { backgroundColor: color.value },
+                  selectedColor === color.value && [styles.selectedColorOption, SHADOWS.glow],
+                ]}
+                onPress={() => setSelectedColor(color.value)}
+              >
+                {selectedColor === color.value && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Intensity Slider */}
-       <View style={styles.intensitySection}>
-        <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
-          Intensidad Global: {Math.round(intensityRef.current)}%
-        </Text>
-        <Slider
-          value={intensityRef.current}
-          onValueChange={(value) => {
-            intensityRef.current = value
-          }}
-          onSlidingComplete={(value) => {
-            setGlobalIntensity(Math.round(value))
-          }}
-          minimumValue={0}
-          maximumValue={100}
-          step={1}
-          minimumTrackTintColor={colors.primary}
-          maximumTrackTintColor="#ccc"
-          thumbTintColor={colors.primary}
-          style={{ width: "100%", height: 40 }}
-        />
-      </View>
+        <View style={styles.intensitySection}>
+          <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
+            Intensidad Global: {globalIntensity}%
+          </Text>
+          <View style={styles.sliderContainer}>
+            <TouchableOpacity
+              style={[styles.sliderButton, { backgroundColor: colors.cardElevated }]}
+              onPress={() => setGlobalIntensity(Math.max(0, globalIntensity - 10))}
+            >
+              <Ionicons name="remove" size={16} color={colors.text} />
+            </TouchableOpacity>
+            <View style={[styles.sliderTrack, { backgroundColor: colors.border }]}>
+              <View style={[styles.sliderFill, { backgroundColor: colors.primary, width: `${globalIntensity}%` }]} />
+            </View>
+            <TouchableOpacity
+              style={[styles.sliderButton, { backgroundColor: colors.cardElevated }]}
+              onPress={() => setGlobalIntensity(Math.min(100, globalIntensity + 10))}
+            >
+              <Ionicons name="add" size={16} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </Animated.View>
 
       {/* Lights Grid */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.lightsSection, contentAnimatedStyle]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Focos Individuales ({currentLab?.lights.filter((l) => l.isOn).length}/{currentLab?.lights.length})
-          </Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Focos Individuales</Text>
 
           <View style={styles.lightsGrid}>
             {currentLab?.lights.map((light, index) => (
@@ -258,8 +298,8 @@ export default function TeacherControlScreen() {
                 key={light.id}
                 style={[
                   styles.lightCard,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                  SHADOWS.small,
+                  { backgroundColor: colors.card, borderColor: light.isOn ? colors.primary : colors.border },
+                  light.isOn ? SHADOWS.glow : SHADOWS.small,
                   lightCardAnimatedStyle,
                 ]}
               >
@@ -270,7 +310,11 @@ export default function TeacherControlScreen() {
                     <Text style={[styles.lightIP, { color: colors.textSecondary }]}>IP: {light.ip}</Text>
                   </View>
                   <TouchableOpacity
-                    style={[styles.powerButton, { backgroundColor: light.isOn ? colors.success : colors.textTertiary }]}
+                    style={[
+                      styles.powerButton,
+                      { backgroundColor: light.isOn ? colors.success : colors.textTertiary },
+                      light.isOn && SHADOWS.glow,
+                    ]}
                     onPress={() => handleLightToggle(light.id)}
                   >
                     <Ionicons name={light.isOn ? "bulb" : "bulb-outline"} size={20} color="#FFFFFF" />
@@ -280,9 +324,9 @@ export default function TeacherControlScreen() {
                 {light.isOn && (
                   <>
                     {/* Color Preview */}
-                    <TouchableOpacity style={[styles.colorPreview, { backgroundColor: light.color }]}>
+                    <View style={[styles.colorPreview, { backgroundColor: light.color }, SHADOWS.small]}>
                       <Text style={styles.colorPreviewText}>Color Actual</Text>
-                    </TouchableOpacity>
+                    </View>
 
                     {/* Individual Color Picker */}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.individualColorPicker}>
@@ -292,7 +336,7 @@ export default function TeacherControlScreen() {
                           style={[
                             styles.miniColorOption,
                             { backgroundColor: color.value },
-                            light.color === color.value && styles.selectedMiniColor,
+                            light.color === color.value && [styles.selectedMiniColor, SHADOWS.small],
                           ]}
                           onPress={() => handleLightColorChange(light.id, color.value)}
                         />
@@ -304,12 +348,12 @@ export default function TeacherControlScreen() {
                       <Text style={[styles.intensityLabel, { color: colors.textSecondary }]}>{light.intensity}%</Text>
                       <View style={styles.miniSliderContainer}>
                         <TouchableOpacity
-                          style={styles.miniSliderButton}
+                          style={[styles.miniSliderButton, { backgroundColor: colors.cardElevated }]}
                           onPress={() => handleLightIntensityChange(light.id, Math.max(0, light.intensity - 10))}
                         >
                           <Ionicons name="remove" size={12} color={colors.textSecondary} />
                         </TouchableOpacity>
-                        <View style={styles.miniSliderTrack}>
+                        <View style={[styles.miniSliderTrack, { backgroundColor: colors.border }]}>
                           <View
                             style={[
                               styles.miniSliderFill,
@@ -318,7 +362,7 @@ export default function TeacherControlScreen() {
                           />
                         </View>
                         <TouchableOpacity
-                          style={styles.miniSliderButton}
+                          style={[styles.miniSliderButton, { backgroundColor: colors.cardElevated }]}
                           onPress={() => handleLightIntensityChange(light.id, Math.min(100, light.intensity + 10))}
                         >
                           <Ionicons name="add" size={12} color={colors.textSecondary} />
@@ -342,7 +386,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 50,
-    paddingBottom: 10,
+    paddingBottom: 20,
     paddingHorizontal: SIZES.lg,
   },
   headerContent: {
@@ -351,11 +395,9 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.sm,
   },
   logo: {
-    width: 80,
-    height: 60,
-    backgroundColor: "rgb(255, 255, 255)",
+    width: 40,
+    height: 40,
     marginRight: SIZES.md,
-    borderRadius: SIZES.borderRadiusSmall,
   },
   headerText: {
     flex: 1,
@@ -370,6 +412,25 @@ const styles = StyleSheet.create({
     fontSize: FONTS.size.sm,
     marginTop: 2,
   },
+  activePracticeContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginTop: SIZES.xs,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingHorizontal: SIZES.sm,
+    paddingVertical: SIZES.xs,
+    borderRadius: SIZES.borderRadiusSmall,
+  },
+  activePracticeText: {
+    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: FONTS.size.sm,
+    fontWeight: FONTS.weight.medium as any,
+    marginLeft: SIZES.xs,
+    flex: 1,
+  },
+  clearPracticeButton: {
+    marginLeft: SIZES.xs,
+  },
   exitButton: {
     width: 48,
     height: 48,
@@ -383,30 +444,52 @@ const styles = StyleSheet.create({
     padding: SIZES.lg,
     borderRadius: SIZES.borderRadius,
   },
+  controlHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    marginBottom: SIZES.lg,
+  },
   sectionTitle: {
     fontSize: FONTS.size.lg,
     fontWeight: FONTS.weight.semibold as any,
-    marginBottom: SIZES.md,
+  },
+  statusIndicator: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: SIZES.xs,
+  },
+  statusText: {
+    fontSize: FONTS.size.sm,
+    fontWeight: FONTS.weight.medium as any,
   },
   controlRow: {
     flexDirection: "row" as const,
     marginBottom: SIZES.lg,
   },
-  colorSection: {
-    marginBottom: SIZES.lg,
+  controlButton: {
+    borderRadius: SIZES.borderRadiusSmall,
   },
   controlLabel: {
     fontSize: FONTS.size.sm,
     fontWeight: FONTS.weight.medium as any,
     marginBottom: SIZES.sm,
   },
+  colorSection: {
+    marginBottom: SIZES.lg,
+  },
   colorPicker: {
     flexDirection: "row" as const,
   },
   colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     marginRight: SIZES.sm,
     justifyContent: "center" as const,
     alignItems: "center" as const,
@@ -425,23 +508,22 @@ const styles = StyleSheet.create({
     alignItems: "center" as const,
   },
   sliderButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
   sliderTrack: {
     flex: 1,
-    height: 6,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
     marginHorizontal: SIZES.md,
     overflow: "hidden" as const,
   },
   sliderFill: {
     height: "100%",
-    borderRadius: 3,
+    borderRadius: 4,
   },
   content: {
     flex: 1,
@@ -457,7 +539,7 @@ const styles = StyleSheet.create({
   lightCard: {
     width: (width - SIZES.lg * 3) / 2,
     borderRadius: SIZES.borderRadius,
-    borderWidth: 1,
+    borderWidth: 2,
     padding: SIZES.md,
     marginBottom: SIZES.md,
   },
@@ -479,14 +561,14 @@ const styles = StyleSheet.create({
     fontSize: FONTS.size.xs,
   },
   powerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
   colorPreview: {
-    height: 32,
+    height: 36,
     borderRadius: SIZES.borderRadiusSmall,
     justifyContent: "center" as const,
     alignItems: "center" as const,
@@ -496,24 +578,24 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: FONTS.size.xs,
     fontWeight: FONTS.weight.semibold as any,
-    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowColor: "rgba(0,0,0,0.7)",
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   },
   individualColorPicker: {
     marginBottom: SIZES.sm,
   },
   miniColorOption: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     marginRight: SIZES.xs,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "transparent",
   },
   selectedMiniColor: {
-    borderColor: "#000000",
-    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    borderWidth: 3,
   },
   lightIntensity: {
     flexDirection: "row" as const,
@@ -523,7 +605,7 @@ const styles = StyleSheet.create({
   intensityLabel: {
     fontSize: FONTS.size.xs,
     fontWeight: FONTS.weight.medium as any,
-    minWidth: 30,
+    minWidth: 35,
   },
   miniSliderContainer: {
     flexDirection: "row" as const,
@@ -532,23 +614,21 @@ const styles = StyleSheet.create({
     marginLeft: SIZES.sm,
   },
   miniSliderButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#F0F0F0",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
   miniSliderTrack: {
     flex: 1,
-    height: 4,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 2,
+    height: 6,
+    borderRadius: 3,
     marginHorizontal: SIZES.xs,
     overflow: "hidden" as const,
   },
   miniSliderFill: {
     height: "100%",
-    borderRadius: 2,
+    borderRadius: 3,
   },
 })

@@ -25,16 +25,25 @@ interface Lab {
   capacity: number
   isActive: boolean
   activeTeacher: string | null
+  activePractice: string | null // Nueva propiedad para la práctica activa
   lights: Light[]
+}
+
+interface PracticeLight {
+  lightId: string
+  isOn: boolean
+  color: string
+  intensity: number
 }
 
 interface Practice {
   id: string
   name: string
   description: string
-  color: string
-  intensity: number
+  labId: string
+  lights: PracticeLight[]
   isCustom: boolean
+  createdBy?: string
 }
 
 interface LabContextType {
@@ -45,14 +54,20 @@ interface LabContextType {
   activateLab: (labId: string, teacherId: string) => boolean
   deactivateLab: (labId: string) => void
   addPractice: (practice: Omit<Practice, "id">) => void
+  updatePractice: (practiceId: string, updates: Partial<Practice>) => void
   deletePractice: (practiceId: string) => void
+  applyPractice: (practiceId: string, labId: string) => void
+  clearActivePractice: (labId: string) => void
   getEnergyConsumption: (labId?: string) => number
+  toggleAllLights: (labId: string, turnOn: boolean) => void
+  applyGlobalSettings: (labId: string, color: string, intensity: number) => void
+  checkPracticeMatch: (labId: string) => boolean
 }
 
 const LabContext = createContext<LabContextType | undefined>(undefined)
 
 export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [labs, setLabs] = useState<Lab[]>(MOCK_LABS)
+  const [labs, setLabs] = useState<Lab[]>(MOCK_LABS.map((lab) => ({ ...lab, activePractice: null })))
   const [practices, setPractices] = useState<Practice[]>(MOCK_PRACTICES)
 
   useEffect(() => {
@@ -65,7 +80,13 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const storedPractices = await AsyncStorage.getItem("practices")
 
       if (storedLabs) {
-        setLabs(JSON.parse(storedLabs))
+        const parsedLabs = JSON.parse(storedLabs)
+        // Asegurar que todos los labs tengan la propiedad activePractice
+        const labsWithActivePractice = parsedLabs.map((lab: Lab) => ({
+          ...lab,
+          activePractice: lab.activePractice || null,
+        }))
+        setLabs(labsWithActivePractice)
       }
       if (storedPractices) {
         setPractices(JSON.parse(storedPractices))
@@ -94,7 +115,52 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newLabs = labs.map((lab) => {
       if (lab.id === labId) {
         const newLights = lab.lights.map((light) => (light.id === lightId ? { ...light, ...updates } : light))
-        return { ...lab, lights: newLights }
+        const updatedLab = { ...lab, lights: newLights }
+
+        // Verificar si la configuración actual coincide con la práctica activa
+        if (updatedLab.activePractice && !checkPracticeMatchForLab(updatedLab)) {
+          updatedLab.activePractice = null
+        }
+
+        return updatedLab
+      }
+      return lab
+    })
+    setLabs(newLabs)
+    saveData(newLabs, practices)
+  }
+
+  const toggleAllLights = (labId: string, turnOn: boolean) => {
+    const newLabs = labs.map((lab) => {
+      if (lab.id === labId) {
+        const newLights = lab.lights.map((light) => ({ ...light, isOn: turnOn }))
+        const updatedLab = { ...lab, lights: newLights }
+
+        // Limpiar práctica activa si se cambia la configuración
+        if (updatedLab.activePractice && !checkPracticeMatchForLab(updatedLab)) {
+          updatedLab.activePractice = null
+        }
+
+        return updatedLab
+      }
+      return lab
+    })
+    setLabs(newLabs)
+    saveData(newLabs, practices)
+  }
+
+  const applyGlobalSettings = (labId: string, color: string, intensity: number) => {
+    const newLabs = labs.map((lab) => {
+      if (lab.id === labId) {
+        const newLights = lab.lights.map((light) => (light.isOn ? { ...light, color, intensity } : light))
+        const updatedLab = { ...lab, lights: newLights }
+
+        // Limpiar práctica activa si se cambia la configuración
+        if (updatedLab.activePractice && !checkPracticeMatchForLab(updatedLab)) {
+          updatedLab.activePractice = null
+        }
+
+        return updatedLab
       }
       return lab
     })
@@ -118,7 +184,13 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newLabs = labs.map((lab) => {
       if (lab.id === labId) {
         const newLights = lab.lights.map((light) => ({ ...light, isOn: false }))
-        return { ...lab, isActive: false, activeTeacher: null, lights: newLights }
+        return {
+          ...lab,
+          isActive: false,
+          activeTeacher: null,
+          activePractice: null, // Limpiar práctica activa al desactivar
+          lights: newLights,
+        }
       }
       return lab
     })
@@ -137,10 +209,80 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveData(labs, newPractices)
   }
 
+  const updatePractice = (practiceId: string, updates: Partial<Practice>) => {
+    const newPractices = practices.map((practice) =>
+      practice.id === practiceId ? { ...practice, ...updates } : practice,
+    )
+    setPractices(newPractices)
+    saveData(labs, newPractices)
+  }
+
   const deletePractice = (practiceId: string) => {
     const newPractices = practices.filter((p) => p.id !== practiceId)
     setPractices(newPractices)
-    saveData(labs, newPractices)
+
+    // Limpiar práctica activa de labs que la estén usando
+    const newLabs = labs.map((lab) => (lab.activePractice === practiceId ? { ...lab, activePractice: null } : lab))
+    setLabs(newLabs)
+
+    saveData(newLabs, newPractices)
+  }
+
+  const applyPractice = (practiceId: string, labId: string) => {
+    const practice = practices.find((p) => p.id === practiceId)
+    if (!practice) return
+
+    const newLabs = labs.map((lab) => {
+      if (lab.id === labId) {
+        const newLights = lab.lights.map((light) => {
+          const practiceLight = practice.lights.find((pl) => pl.lightId === light.id)
+          if (practiceLight) {
+            return {
+              ...light,
+              isOn: practiceLight.isOn,
+              color: practiceLight.color,
+              intensity: practiceLight.intensity,
+            }
+          }
+          return light
+        })
+        return { ...lab, lights: newLights, activePractice: practiceId }
+      }
+      return lab
+    })
+    setLabs(newLabs)
+    saveData(newLabs, practices)
+  }
+
+  const clearActivePractice = (labId: string) => {
+    const newLabs = labs.map((lab) => (lab.id === labId ? { ...lab, activePractice: null } : lab))
+    setLabs(newLabs)
+    saveData(newLabs, practices)
+  }
+
+  // Función auxiliar para verificar si la configuración actual coincide con una práctica
+  const checkPracticeMatchForLab = (lab: Lab): boolean => {
+    if (!lab.activePractice) return true
+
+    const practice = practices.find((p) => p.id === lab.activePractice)
+    if (!practice) return false
+
+    return practice.lights.every((practiceLight) => {
+      const currentLight = lab.lights.find((light) => light.id === practiceLight.lightId)
+      if (!currentLight) return false
+
+      return (
+        currentLight.isOn === practiceLight.isOn &&
+        currentLight.color === practiceLight.color &&
+        currentLight.intensity === practiceLight.intensity
+      )
+    })
+  }
+
+  const checkPracticeMatch = (labId: string): boolean => {
+    const lab = labs.find((l) => l.id === labId)
+    if (!lab) return false
+    return checkPracticeMatchForLab(lab)
   }
 
   const getEnergyConsumption = (labId?: string): number => {
@@ -173,8 +315,14 @@ export const LabProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activateLab,
         deactivateLab,
         addPractice,
+        updatePractice,
         deletePractice,
+        applyPractice,
+        clearActivePractice,
         getEnergyConsumption,
+        toggleAllLights,
+        applyGlobalSettings,
+        checkPracticeMatch,
       }}
     >
       {children}

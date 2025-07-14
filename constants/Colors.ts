@@ -130,4 +130,3 @@ export const ANIMATIONS = {
     easeInOut: "ease-in-out",
   },
 }
-
