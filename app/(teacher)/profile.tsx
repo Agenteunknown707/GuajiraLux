@@ -76,7 +76,7 @@ export default function TeacherProfileScreen() {
   return (
     <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
         <Image source={{ uri: "https://s3.amazonaws.com/cdn.proxybk.com/logo-uniguajira.png" }} style={styles.logo} resizeMode="contain" />
         <View style={styles.headerText}>
           <Text style={styles.headerespacio}></Text>

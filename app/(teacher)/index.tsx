@@ -187,9 +187,9 @@ export default function TeacherControlScreen() {
   return (
     <Animated.View style={[styles.container, { backgroundColor: colors.background }, containerAnimatedStyle]}>
       {/* Header */}
-      <Animated.View style={[styles.header, { backgroundColor: colors.primary }, headerAnimatedStyle]}>
+      <Animated.View style={[styles.header, { backgroundColor: colors.primaryDark }, headerAnimatedStyle]}>
         <View style={styles.headerContent}>
-          <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
+          <Image source={require("../../assets/images/logoUniGuajira.png")} style={styles.logo} resizeMode="contain" />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{currentLab?.name}</Text>
             <Text style={styles.headerSubtitle}>
@@ -205,11 +205,11 @@ export default function TeacherControlScreen() {
                 </TouchableOpacity>
               </View>
             )}
+            <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
+              <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
         </View>
-        <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
-          <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
       </Animated.View>
 
       {/* Global Controls */}
@@ -231,13 +231,13 @@ export default function TeacherControlScreen() {
             title="Encender/Apagar Todo"
             onPress={handleToggleAllLights}
             variant="primary"
-            size="medium"
+            size="small"
           />
           <AnimatedButton
-            title="Aplicar Config."
+            title="Aplicar Configuración"
             onPress={handleApplyGlobalSettings}
             variant="secondary"
-            size="medium"
+            size="small"
           />
         </View>
 
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 50,
-    paddingBottom: 20,
+    paddingBottom: 10,
     paddingHorizontal: SIZES.lg,
   },
   headerContent: {
@@ -394,9 +394,11 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.sm,
   },
   logo: {
-    width: 40,
-    height: 40,
+    width: 80,
+    height: 60,
     marginRight: SIZES.md,
+    backgroundColor: "rgba(255, 255, 255, 0.92)",
+    borderRadius: SIZES.borderRadiusSmall
   },
   headerText: {
     flex: 1,
@@ -414,7 +416,7 @@ const styles = StyleSheet.create({
   activePracticeContainer: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    marginTop: SIZES.xs,
+    marginTop: SIZES.lg,
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     paddingHorizontal: SIZES.sm,
     paddingVertical: SIZES.xs,
@@ -431,8 +433,8 @@ const styles = StyleSheet.create({
     marginLeft: SIZES.xs,
   },
   globalControls: {
-    margin: SIZES.lg,
-    padding: SIZES.lg,
+    margin: 10,
+    padding: 10,
     borderRadius: SIZES.borderRadius,
   },
   controlHeader: {
@@ -444,6 +446,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: FONTS.size.lg,
     fontWeight: FONTS.weight.semibold as any,
+    marginBottom: SIZES.lg,
   },
   statusIndicator: {
     flexDirection: "row" as const,
@@ -462,6 +465,7 @@ const styles = StyleSheet.create({
   controlRow: {
     flexDirection: "row" as const,
     marginBottom: SIZES.lg,
+    justifyContent: "space-between" as const,
   },
   controlButton: {
     height: 88,
@@ -520,25 +524,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lightsSection: {
+    width: "100%",
     padding: SIZES.lg,
   },
   lightsGrid: {
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-    justifyContent: "space-between",
+    flexDirection: "column" as const,
+    justifyContent: "flex-start", // opcional
   },
   lightCard: {
-    width: (width - SIZES.lg * 3) / 2,
+    width: "100%", // <-- aquí el cambio
     borderRadius: SIZES.borderRadius,
     borderWidth: 2,
     padding: SIZES.md,
     marginBottom: SIZES.md,
-  },
+},
   lightHeader: {
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "flex-start" as const,
-    marginBottom: SIZES.md,
+    marginBottom: SIZES.lg,
   },
   lightInfo: {
     flex: 1,
@@ -583,6 +587,7 @@ const styles = StyleSheet.create({
     marginRight: SIZES.xs,
     borderWidth: 2,
     borderColor: "transparent",
+    marginTop: SIZES.md,
   },
   selectedMiniColor: {
     borderColor: "#FFFFFF",
@@ -592,6 +597,7 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
+    marginTop: SIZES.md,
   },
   intensityLabel: {
     fontSize: FONTS.size.xs,
@@ -621,5 +627,13 @@ const styles = StyleSheet.create({
   miniSliderFill: {
     height: "100%",
     borderRadius: 3,
+  },
+  exitButton: {
+    position: "absolute",
+    top: SIZES.sm,
+    right: SIZES.md,
+    padding: SIZES.sm,
+    borderRadius: SIZES.borderRadiusSmall,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
   },
 })

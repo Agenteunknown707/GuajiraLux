@@ -10,6 +10,8 @@ export const COLORS = {
   surface: "#1E1E1E",       // Superficie de componentes
   surfaceVariant: "#2D2D2D", // Variante de superficie
   surfaceHighlight: "#383838", // Para resaltar elementos
+  card: "#1E1E1E",          // Fondo de tarjetas
+  cardElevated: "#2D2D2D",  // Tarjetas elevadas con sombra
   
   // Texto y bordes
   text: "#FFFFFF",          // Texto principal
@@ -114,6 +116,13 @@ export const SHADOWS = {
     shadowOpacity: 0.2,
     shadowRadius: 16,
     elevation: 8,
+  },
+  glow: {
+    shadowColor: "#00BFD8",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
 }
 
