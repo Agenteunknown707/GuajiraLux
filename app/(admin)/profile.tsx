@@ -7,6 +7,7 @@ import { useAuth } from "../../context/AuthContext"
 import { useTheme } from "../../context/ThemeContext"
 import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
 import { AnimatedButton } from "../../components/AnimatedButton"
+import { router } from "expo-router"
 
 export default function AdminProfileScreen() {
   const { user, logout } = useAuth()
@@ -55,16 +56,18 @@ export default function AdminProfileScreen() {
     ])
   }
 
-  const handleLogout = () => {
-    Alert.alert("Cerrar Sesión", "¿Estás seguro de que deseas cerrar sesión?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Cerrar Sesión",
-        style: "destructive",
-        onPress: logout,
-      },
-    ])
-  }
+ const handleLogout = () => {
+      Alert.alert("Cerrar Sesión", "¿Estás seguro de que deseas cerrar sesión?", [
+       { text: "Cancelar", style: "cancel" },
+       {
+         text: "Cerrar Sesión",
+         onPress: () => {
+           logout()
+           router.replace("/(auth)/login")
+         },
+       },
+     ])
+   }
 
   return (
     <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>

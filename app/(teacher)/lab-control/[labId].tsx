@@ -1,265 +1,382 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Dimensions, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import Slider from "@react-native-community/slider"
-import { useLocalSearchParams, useRouter } from "expo-router"
-import { useEffect, useState } from "react"
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
-import { SIZES } from "../../../constants/Colors"
-import { RGB_COLORS } from "../../../constants/Data"
+import { useAuth } from "../../../context/AuthContext"
 import { useLab } from "../../../context/LabContext"
 import { useTheme } from "../../../context/ThemeContext"
+import { LabSelectionModal } from "../../../components/LabSelectionModal"
+import { AnimatedButton } from "../../../components/AnimatedButton"
+import { RGB_COLORS } from "../../../constants/Data"
+import { SIZES, FONTS, SHADOWS } from "../../../constants/Colors"
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  interpolate,
+} from "react-native-reanimated"
 
-export default function LabControlScreen() {
-  const { labId } = useLocalSearchParams<{ labId: string }>()
-  const { labs, updateLight, deactivateLab, practices } = useLab()
+const { width } = Dimensions.get("window")
+
+export default function TeacherControlScreen() {
+  const { user } = useAuth()
+  const {
+    labs,
+    practices,
+    updateLight,
+    activateLab,
+    deactivateLab,
+    toggleAllLights,
+    applyGlobalSettings,
+    clearActivePractice,
+  } = useLab()
   const { colors } = useTheme()
-  const router = useRouter()
 
-  const [selectedLight, setSelectedLight] = useState<any>(null)
-  const [showColorPicker, setShowColorPicker] = useState(false)
-  const [showPracticeSelector, setShowPracticeSelector] = useState(false)
+  const [showLabModal, setShowLabModal] = useState(false)
+  const [selectedLabId, setSelectedLabId] = useState<string | null>(null)
+  const [selectedColor, setSelectedColor] = useState("#FFFFFF")
+  const [globalIntensity, setGlobalIntensity] = useState(100)
 
-  const lab = labs.find((l) => l.id === labId)
+  // Shared values para animaciones
+  const opacity = useSharedValue(0)
+  const translateY = useSharedValue(50)
+  const headerTranslateY = useSharedValue(-100)
+
+  // Filtrar laboratorios asignados al docente
+  const assignedLabs = labs.filter((lab) => user?.assignedLabs?.includes(lab.id))
+  const currentLab = selectedLabId ? labs.find((l) => l.id === selectedLabId) : null
+
+  // Obtener la práctica activa
+  const activePractice = currentLab?.activePractice ? practices.find((p) => p.id === currentLab.activePractice) : null
 
   useEffect(() => {
-    if (!lab) {
-      router.back()
+    if (selectedLabId) {
+      // Animaciones de entrada cuando se selecciona un laboratorio
+      opacity.value = withTiming(1, { duration: 500 })
+      translateY.value = withTiming(0, { duration: 500 })
+      headerTranslateY.value = withSpring(0, { damping: 15, stiffness: 150 })
     }
-  }, [lab])
+  }, [selectedLabId])
 
-  const handleLightToggle = (lightId: string) => {
-    const light = lab?.lights.find((l) => l.id === lightId)
-    if (light && labId) {
-      updateLight(labId, lightId, { isOn: !light.isOn })
+  useEffect(() => {
+    // Solo mostrar el modal si no hay laboratorio seleccionado
+    if (!selectedLabId && assignedLabs.length > 0) {
+      setShowLabModal(true)
+    }
+  }, [selectedLabId, assignedLabs])
+
+  const handleLabSelection = (labId: string) => {
+    const success = activateLab(labId, user?.id || "")
+    if (success) {
+      setSelectedLabId(labId)
+      setShowLabModal(false)
+    } else {
+      Alert.alert("Error", "No se pudo activar el laboratorio")
     }
   }
 
-  const handleColorChange = (color: string) => {
-    if (selectedLight && labId) {
-      updateLight(labId, selectedLight.id, { color })
-      setShowColorPicker(false)
-      setSelectedLight(null)
-    }
-  }
-
-  const handleIntensityChange = (lightId: string, intensity: number) => {
-    if (labId) {
-      updateLight(labId, lightId, { intensity })
-    }
-  }
-
-  const handlePracticeSelect = (practice: any) => {
-    // Aplicar configuración de práctica a todos los focos
-    if (labId) {
-      lab?.lights.forEach((light) => {
-        updateLight(labId, light.id, {
-          isOn: true,
-          color: practice.color,
-          intensity: practice.intensity,
-        })
-      })
-    }
-    setShowPracticeSelector(false)
-  }
-
-  const handleDeactivateLab = () => {
-    Alert.alert("Desactivar Laboratorio", "¿Estás seguro? Esto apagará todos los focos y liberará el laboratorio.", [
+  const handleExitLab = () => {
+    Alert.alert("Salir del Laboratorio", "¿Estás seguro? Esto apagará todos los focos y liberará el laboratorio.", [
       { text: "Cancelar", style: "cancel" },
       {
-        text: "Desactivar",
+        text: "Salir",
         onPress: () => {
-          if (labId) {
-            deactivateLab(labId)
+          if (selectedLabId) {
+            deactivateLab(selectedLabId)
           }
-          router.back()
+          // Reset animaciones
+          opacity.value = 0
+          translateY.value = 50
+          headerTranslateY.value = -100
+          setSelectedLabId(null)
+          setShowLabModal(true)
         },
       },
     ])
   }
 
-  const toggleAllLights = () => {
-    if (!labId) return
-    const allOn = lab?.lights.every((light) => light.isOn)
-    lab?.lights.forEach((light) => {
-      updateLight(labId, light.id, { isOn: !allOn })
-    })
+  const handleToggleAllLights = () => {
+    if (!currentLab || !selectedLabId) return
+    const allOn = currentLab.lights.every((light) => light.isOn)
+    toggleAllLights(selectedLabId, !allOn)
   }
 
-  if (!lab) {
+  const handleApplyGlobalSettings = () => {
+    if (!currentLab || !selectedLabId) return
+    applyGlobalSettings(selectedLabId, selectedColor, globalIntensity)
+  }
+
+  const handleLightToggle = (lightId: string) => {
+    if (!selectedLabId) return
+    const light = currentLab?.lights.find((l) => l.id === lightId)
+    if (light) {
+      updateLight(selectedLabId, lightId, { isOn: !light.isOn })
+    }
+  }
+
+  const handleLightColorChange = (lightId: string, color: string) => {
+    if (!selectedLabId) return
+    updateLight(selectedLabId, lightId, { color })
+  }
+
+  const handleLightIntensityChange = (lightId: string, intensity: number) => {
+    if (!selectedLabId) return
+    updateLight(selectedLabId, lightId, { intensity })
+  }
+
+  const handleClearActivePractice = () => {
+    if (!selectedLabId) return
+    Alert.alert(
+      "Limpiar Práctica Activa",
+      "¿Deseas limpiar la práctica activa? Esto no afectará la configuración actual de los focos.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Limpiar",
+          onPress: () => {
+            clearActivePractice(selectedLabId)
+          },
+        },
+      ],
+    )
+  }
+
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    }
+  })
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: headerTranslateY.value }],
+    }
+  })
+
+  const contentAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: translateY.value }],
+    }
+  })
+
+  const lightCardAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [
+        {
+          translateY: interpolate(opacity.value, [0, 1], [30, 0]),
+        },
+      ],
+    }
+  })
+
+  if (!selectedLabId) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[styles.errorText, { color: colors.text }]}>Laboratorio no encontrado</Text>
-      </View>
+      <LabSelectionModal
+        visible={showLabModal}
+        labs={assignedLabs}
+        onSelectLab={handleLabSelection}
+        onClose={() => setShowLabModal(false)}
+        currentUserId={user?.id || ""}
+      />
     )
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header de control */}
-      <View style={[styles.controlHeader, { backgroundColor: colors.surface }]}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.labTitle, { color: colors.text }]}>{lab.name}</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        <View style={styles.controlButtons}>
-          <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: colors.primary }]}
-            onPress={toggleAllLights}
-          >
-            <Ionicons name="bulb" size={20} color="#FFFFFF" />
-            <Text style={styles.controlButtonText}>Todo</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: colors.accent }]}
-            onPress={() => setShowPracticeSelector(true)}
-          >
-            <Ionicons name="flask" size={20} color="#FFFFFF" />
-            <Text style={styles.controlButtonText}>Práctica</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: colors.error }]}
-            onPress={handleDeactivateLab}
-          >
-            <Ionicons name="power" size={20} color="#FFFFFF" />
-            <Text style={styles.controlButtonText}>Salir</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView style={styles.content}>
-        {/* Grid de focos */}
-        <View style={styles.lightsGrid}>
-          {lab.lights.map((light) => (
-            <View key={light.id} style={[styles.lightCard, { backgroundColor: colors.surface }]}>
-              <View style={styles.lightHeader}>
-                <Text style={[styles.lightName, { color: colors.text }]}>{light.name}</Text>
-                <TouchableOpacity
-                  style={[styles.powerButton, { backgroundColor: light.isOn ? colors.success : colors.textSecondary }]}
-                  onPress={() => handleLightToggle(light.id)}
-                >
-                  <Ionicons name={light.isOn ? "bulb" : "bulb-outline"} size={20} color="#FFFFFF" />
+    <Animated.View style={[styles.container, { backgroundColor: colors.background }, containerAnimatedStyle]}>
+      {/* Header */}
+      <Animated.View style={[styles.header, { backgroundColor: colors.primary }, headerAnimatedStyle]}>
+        <View style={styles.headerContent}>
+          <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>{currentLab?.name}</Text>
+            <Text style={styles.headerSubtitle}>
+              {currentLab?.building} - {currentLab?.room}
+            </Text>
+            {/* Mostrar práctica activa */}
+            {activePractice && (
+              <View style={styles.activePracticeContainer}>
+                <Ionicons name="flask" size={16} color="rgba(255, 255, 255, 0.9)" />
+                <Text style={styles.activePracticeText}>{activePractice.name}</Text>
+                <TouchableOpacity onPress={handleClearActivePractice} style={styles.clearPracticeButton}>
+                  <Ionicons name="close-circle" size={16} color="rgba(255, 255, 255, 0.8)" />
                 </TouchableOpacity>
               </View>
+            )}
+          </View>
+        </View>
+        <TouchableOpacity style={styles.exitButton} onPress={handleExitLab}>
+          <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </Animated.View>
 
-              {light.isOn && (
-                <>
-                  {/* Selector de color */}
+      {/* Global Controls */}
+      <Animated.View
+        style={[styles.globalControls, { backgroundColor: colors.card }, SHADOWS.medium, contentAnimatedStyle]}
+      >
+        <View style={styles.controlHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Control General</Text>
+          <View style={styles.statusIndicator}>
+            <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+            <Text style={[styles.statusText, { color: colors.textSecondary }]}>
+              {currentLab?.lights.filter((l) => l.isOn).length}/{currentLab?.lights.length} activos
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.controlRow}>
+          <AnimatedButton
+            title="Encender/Apagar Todo"
+            onPress={handleToggleAllLights}
+            variant="secondary"
+            size="small"
+            style={styles.controlButton}
+          />
+          <AnimatedButton
+            title="Aplicar Config."
+            onPress={handleApplyGlobalSettings}
+            size="small"
+            style={[styles.controlButton, { flex: 1, marginLeft: SIZES.sm }]}
+          />
+        </View>
+
+        {/* Color Selector */}
+        <View style={styles.colorSection}>
+          <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>Color Global</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorPicker}>
+            {RGB_COLORS.map((color) => (
+              <TouchableOpacity
+                key={color.value}
+                style={[
+                  styles.colorOption,
+                  { backgroundColor: color.value },
+                  selectedColor === color.value && [styles.selectedColorOption, SHADOWS.glow],
+                ]}
+                onPress={() => setSelectedColor(color.value)}
+              >
+                {selectedColor === color.value && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Intensity Slider */}
+        <View style={styles.intensitySection}>
+          <Text style={[styles.controlLabel, { color: colors.textSecondary }]}>
+            Intensidad Global: {globalIntensity}%
+          </Text>
+          <View style={styles.sliderContainer}>
+            <TouchableOpacity
+              style={[styles.sliderButton, { backgroundColor: colors.cardElevated }]}
+              onPress={() => setGlobalIntensity(Math.max(0, globalIntensity - 10))}
+            >
+              <Ionicons name="remove" size={16} color={colors.text} />
+            </TouchableOpacity>
+            <View style={[styles.sliderTrack, { backgroundColor: colors.border }]}>
+              <View style={[styles.sliderFill, { backgroundColor: colors.primary, width: `${globalIntensity}%` }]} />
+            </View>
+            <TouchableOpacity
+              style={[styles.sliderButton, { backgroundColor: colors.cardElevated }]}
+              onPress={() => setGlobalIntensity(Math.min(100, globalIntensity + 10))}
+            >
+              <Ionicons name="add" size={16} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Lights Grid */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <Animated.View style={[styles.lightsSection, contentAnimatedStyle]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Focos Individuales</Text>
+
+          <View style={styles.lightsGrid}>
+            {currentLab?.lights.map((light, index) => (
+              <Animated.View
+                key={light.id}
+                style={[
+                  styles.lightCard,
+                  { backgroundColor: colors.card, borderColor: light.isOn ? colors.primary : colors.border },
+                  light.isOn ? SHADOWS.glow : SHADOWS.small,
+                  lightCardAnimatedStyle,
+                ]}
+              >
+                {/* Light Header */}
+                <View style={styles.lightHeader}>
+                  <View style={styles.lightInfo}>
+                    <Text style={[styles.lightName, { color: colors.text }]}>{light.name}</Text>
+                    <Text style={[styles.lightIP, { color: colors.textSecondary }]}>IP: {light.ip}</Text>
+                  </View>
                   <TouchableOpacity
-                    style={[styles.colorPreview, { backgroundColor: light.color }]}
-                    onPress={() => {
-                      setSelectedLight(light)
-                      setShowColorPicker(true)
-                    }}
+                    style={[
+                      styles.powerButton,
+                      { backgroundColor: light.isOn ? colors.success : colors.textTertiary },
+                      light.isOn && SHADOWS.glow,
+                    ]}
+                    onPress={() => handleLightToggle(light.id)}
                   >
-                    <Text style={styles.colorText}>Color</Text>
+                    <Ionicons name={light.isOn ? "bulb" : "bulb-outline"} size={20} color="#FFFFFF" />
                   </TouchableOpacity>
+                </View>
 
-                  {/* Control de intensidad */}
-                  <View style={styles.intensityControl}>
-                    <Text style={[styles.intensityLabel, { color: colors.textSecondary }]}>
-                      Intensidad: {light.intensity}%
-                    </Text>
-                    <Slider
-                      style={styles.slider}
-                      minimumValue={0}
-                      maximumValue={100}
-                      value={light.intensity}
-                      onValueChange={(value) => handleIntensityChange(light.id, Math.round(value))}
-                      minimumTrackTintColor={colors.primary}
-                      maximumTrackTintColor={colors.border}
-                    />
-                  </View>
-                </>
-              )}
-            </View>
-          ))}
-        </View>
+                {light.isOn && (
+                  <>
+                    {/* Color Preview */}
+                    <View style={[styles.colorPreview, { backgroundColor: light.color }, SHADOWS.small]}>
+                      <Text style={styles.colorPreviewText}>Color Actual</Text>
+                    </View>
+
+                    {/* Individual Color Picker */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.individualColorPicker}>
+                      {RGB_COLORS.slice(0, 6).map((color) => (
+                        <TouchableOpacity
+                          key={color.value}
+                          style={[
+                            styles.miniColorOption,
+                            { backgroundColor: color.value },
+                            light.color === color.value && [styles.selectedMiniColor, SHADOWS.small],
+                          ]}
+                          onPress={() => handleLightColorChange(light.id, color.value)}
+                        />
+                      ))}
+                    </ScrollView>
+
+                    {/* Individual Intensity */}
+                    <View style={styles.lightIntensity}>
+                      <Text style={[styles.intensityLabel, { color: colors.textSecondary }]}>{light.intensity}%</Text>
+                      <View style={styles.miniSliderContainer}>
+                        <TouchableOpacity
+                          style={[styles.miniSliderButton, { backgroundColor: colors.cardElevated }]}
+                          onPress={() => handleLightIntensityChange(light.id, Math.max(0, light.intensity - 10))}
+                        >
+                          <Ionicons name="remove" size={12} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                        <View style={[styles.miniSliderTrack, { backgroundColor: colors.border }]}>
+                          <View
+                            style={[
+                              styles.miniSliderFill,
+                              { backgroundColor: colors.primary, width: `${light.intensity}%` },
+                            ]}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.miniSliderButton, { backgroundColor: colors.cardElevated }]}
+                          onPress={() => handleLightIntensityChange(light.id, Math.min(100, light.intensity + 10))}
+                        >
+                          <Ionicons name="add" size={12} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </>
+                )}
+              </Animated.View>
+            ))}
+          </View>
+        </Animated.View>
       </ScrollView>
-
-      {/* Modal selector de color */}
-      <Modal
-        visible={showColorPicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowColorPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Seleccionar Color</Text>
-
-            <View style={styles.colorGrid}>
-              {RGB_COLORS.map((color) => (
-                <TouchableOpacity
-                  key={color.value}
-                  style={[styles.colorOption, { backgroundColor: color.value }]}
-                  onPress={() => handleColorChange(color.value)}
-                >
-                  <Text style={styles.colorName}>{color.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={[styles.cancelButton, { backgroundColor: colors.textSecondary }]}
-              onPress={() => setShowColorPicker(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Modal selector de práctica */}
-      <Modal
-        visible={showPracticeSelector}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowPracticeSelector(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Seleccionar Práctica</Text>
-
-            <ScrollView style={styles.practicesList}>
-              {practices.map((practice) => (
-                <TouchableOpacity
-                  key={practice.id}
-                  style={[styles.practiceOption, { backgroundColor: colors.background }]}
-                  onPress={() => handlePracticeSelect(practice)}
-                >
-                  <View style={styles.practiceInfo}>
-                    <Text style={[styles.practiceName, { color: colors.text }]}>{practice.name}</Text>
-                    <Text style={[styles.practiceDescription, { color: colors.textSecondary }]}>
-                      {practice.description}
-                    </Text>
-                  </View>
-                  <View style={styles.practiceSettings}>
-                    <View style={[styles.practiceColor, { backgroundColor: practice.color }]} />
-                    <Text style={[styles.practiceIntensity, { color: colors.textSecondary }]}>
-                      {practice.intensity}%
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={[styles.cancelButton, { backgroundColor: colors.textSecondary }]}
-              onPress={() => setShowPracticeSelector(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </View>
+    </Animated.View>
   )
 }
 
@@ -267,181 +384,251 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  controlHeader: {
+  header: {
     paddingTop: 50,
-    padding: SIZES.padding,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    paddingBottom: 20,
+    paddingHorizontal: SIZES.lg,
   },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
+  headerContent: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginBottom: SIZES.sm,
   },
-  labTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
+  logo: {
+    width: 40,
+    height: 40,
+    marginRight: SIZES.md,
   },
-  controlButtons: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+  headerText: {
+    flex: 1,
+  },
+  headerTitle: {
+    color: "#FFFFFF",
+    fontSize: FONTS.size.xl,
+    fontWeight: FONTS.weight.bold as any,
+  },
+  headerSubtitle: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: FONTS.size.sm,
+    marginTop: 2,
+  },
+  activePracticeContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    marginTop: SIZES.xs,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingHorizontal: SIZES.sm,
+    paddingVertical: SIZES.xs,
+    borderRadius: SIZES.borderRadiusSmall,
+  },
+  activePracticeText: {
+    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: FONTS.size.sm,
+    fontWeight: FONTS.weight.medium as any,
+    marginLeft: SIZES.xs,
+    flex: 1,
+  },
+  clearPracticeButton: {
+    marginLeft: SIZES.xs,
+  },
+  exitButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  globalControls: {
+    margin: SIZES.lg,
+    padding: SIZES.lg,
+    borderRadius: SIZES.borderRadius,
+  },
+  controlHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    marginBottom: SIZES.lg,
+  },
+  sectionTitle: {
+    fontSize: FONTS.size.lg,
+    fontWeight: FONTS.weight.semibold as any,
+  },
+  statusIndicator: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: SIZES.xs,
+  },
+  statusText: {
+    fontSize: FONTS.size.sm,
+    fontWeight: FONTS.weight.medium as any,
+  },
+  controlRow: {
+    flexDirection: "row" as const,
+    marginBottom: SIZES.lg,
   },
   controlButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: SIZES.borderRadius,
+    borderRadius: SIZES.borderRadiusSmall,
   },
-  controlButtonText: {
-    color: "#FFFFFF",
-    marginLeft: 8,
-    fontWeight: "bold",
+  controlLabel: {
+    fontSize: FONTS.size.sm,
+    fontWeight: FONTS.weight.medium as any,
+    marginBottom: SIZES.sm,
   },
-  content: {
-    flex: 1,
-    padding: SIZES.padding,
+  colorSection: {
+    marginBottom: SIZES.lg,
   },
-  lightsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+  colorPicker: {
+    flexDirection: "row" as const,
   },
-  lightCard: {
-    width: "48%",
-    borderRadius: SIZES.borderRadius,
-    padding: SIZES.padding,
-    marginBottom: SIZES.margin,
+  colorOption: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: SIZES.sm,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  lightHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
+  selectedColorOption: {
+    borderColor: "#FFFFFF",
+    borderWidth: 3,
   },
-  lightName: {
-    fontSize: 14,
-    fontWeight: "bold",
-    flex: 1,
+  intensitySection: {
+    marginBottom: SIZES.sm,
   },
-  powerButton: {
+  sliderContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  sliderButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  sliderTrack: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: SIZES.md,
+    overflow: "hidden" as const,
+  },
+  sliderFill: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  content: {
+    flex: 1,
+  },
+  lightsSection: {
+    padding: SIZES.lg,
+  },
+  lightsGrid: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    justifyContent: "space-between",
+  },
+  lightCard: {
+    width: (width - SIZES.lg * 3) / 2,
+    borderRadius: SIZES.borderRadius,
+    borderWidth: 2,
+    padding: SIZES.md,
+    marginBottom: SIZES.md,
+  },
+  lightHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "flex-start" as const,
+    marginBottom: SIZES.md,
+  },
+  lightInfo: {
+    flex: 1,
+  },
+  lightName: {
+    fontSize: FONTS.size.md,
+    fontWeight: FONTS.weight.semibold as any,
+    marginBottom: 2,
+  },
+  lightIP: {
+    fontSize: FONTS.size.xs,
+  },
+  powerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   colorPreview: {
-    height: 40,
-    borderRadius: SIZES.borderRadius,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
+    height: 36,
+    borderRadius: SIZES.borderRadiusSmall,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    marginBottom: SIZES.sm,
   },
-  colorText: {
+  colorPreviewText: {
     color: "#FFFFFF",
-    fontWeight: "bold",
-    textShadowColor: "rgba(0,0,0,0.5)",
+    fontSize: FONTS.size.xs,
+    fontWeight: FONTS.weight.semibold as any,
+    textShadowColor: "rgba(0,0,0,0.7)",
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   },
-  intensityControl: {
-    marginTop: 8,
+  individualColorPicker: {
+    marginBottom: SIZES.sm,
+  },
+  miniColorOption: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: SIZES.xs,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  selectedMiniColor: {
+    borderColor: "#FFFFFF",
+    borderWidth: 3,
+  },
+  lightIntensity: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
   },
   intensityLabel: {
-    fontSize: 12,
-    marginBottom: 8,
+    fontSize: FONTS.size.xs,
+    fontWeight: FONTS.weight.medium as any,
+    minWidth: 35,
   },
-  slider: {
-    width: "100%",
-    height: 20,
-  },
-  modalOverlay: {
+  miniSliderContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    marginLeft: SIZES.sm,
   },
-  modalContent: {
-    width: "90%",
-    maxHeight: "80%",
-    borderRadius: SIZES.borderRadius,
-    padding: SIZES.padding,
+  miniSliderButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  colorGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  colorOption: {
-    width: "30%",
-    height: 60,
-    borderRadius: SIZES.borderRadius,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  colorName: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "bold",
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  practicesList: {
-    maxHeight: 300,
-    marginBottom: 20,
-  },
-  practiceOption: {
-    flexDirection: "row",
-    padding: 12,
-    borderRadius: SIZES.borderRadius,
-    marginBottom: 8,
-  },
-  practiceInfo: {
+  miniSliderTrack: {
     flex: 1,
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: SIZES.xs,
+    overflow: "hidden" as const,
   },
-  practiceName: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  practiceDescription: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  practiceSettings: {
-    alignItems: "center",
-  },
-  practiceColor: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginBottom: 4,
-  },
-  practiceIntensity: {
-    fontSize: 12,
-  },
-  cancelButton: {
-    paddingVertical: 12,
-    borderRadius: SIZES.borderRadius,
-    alignItems: "center",
-  },
-  cancelButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-  },
-  errorText: {
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 50,
+  miniSliderFill: {
+    height: "100%",
+    borderRadius: 3,
   },
 })
