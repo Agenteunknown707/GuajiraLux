@@ -363,7 +363,7 @@ const styles = {
     flex: 1,
   },
   header: {
-    paddingTop: 50,
+    paddingTop: 70,
     paddingBottom: 20,
     paddingHorizontal: SIZES.lg,
     alignItems: "center" as const,

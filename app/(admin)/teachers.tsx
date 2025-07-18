@@ -18,7 +18,7 @@ interface Teacher {
   password: string
   assignedLabs: string[]
   photo: string
-  phone: string
+  phone: string 
   department: string
 }
 
@@ -136,17 +136,16 @@ export default function TeachersScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <View style={styles.headerContent}>
-          <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Gestión de Docentes</Text>
             <Text style={styles.headerSubtitle}>
               {teachers.length} docente{teachers.length !== 1 ? "s" : ""} registrado{teachers.length !== 1 ? "s" : ""}
             </Text>
           </View>
-        </View>
-        <TouchableOpacity style={styles.addButton} onPress={() => openModal()}>
+            <TouchableOpacity style={styles.addButton} onPress={() => openModal()}>
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
+        </View>
       </View>
 
       {/* Teachers List */}
@@ -172,7 +171,7 @@ export default function TeachersScreen() {
             ]}
           >
             <View style={styles.teacherHeader}>
-              <Image source={{ uri: teacher.photo }} style={styles.teacherPhoto} />
+              <Image source={teacher.photo} style={styles.teacherPhoto} />
               <View style={styles.teacherInfo}>
                 <Text style={[styles.teacherName, { color: colors.text }]}>
                   {teacher.firstName} {teacher.lastName} {teacher.secondLastName}
@@ -473,11 +472,6 @@ const styles = StyleSheet.create ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     marginBottom: SIZES.md,
-  },
-  logo: {
-    width: 40,
-    height: 40,
-    marginRight: SIZES.md,
   },
   headerText: {
     flex: 1,

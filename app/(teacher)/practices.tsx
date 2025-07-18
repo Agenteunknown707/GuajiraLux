@@ -199,7 +199,7 @@ export default function PracticesScreen() {
   return (
     <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim.current }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+      <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Prácticas de Laboratorio</Text>
           <Text style={styles.headerSubtitle}>
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 50,
+    paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: SIZES.lg,
     flexDirection: "row",

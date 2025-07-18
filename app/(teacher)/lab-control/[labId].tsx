@@ -189,7 +189,7 @@ export default function TeacherControlScreen() {
       {/* Header */}
       <Animated.View style={[styles.header, { backgroundColor: colors.primary }, headerAnimatedStyle]}>
         <View style={styles.headerContent}>
-          <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
+          <Image source={require("../../../assets/images/logoUniGuajira.png")} style={styles.logo} resizeMode="contain" />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{currentLab?.name}</Text>
             <Text style={styles.headerSubtitle}>
@@ -238,7 +238,7 @@ export default function TeacherControlScreen() {
             title="Aplicar Config."
             onPress={handleApplyGlobalSettings}
             size="small"
-            style={[styles.controlButton, { flex: 1, marginLeft: SIZES.sm }]}
+            style={styles.controlButton}
           />
         </View>
 

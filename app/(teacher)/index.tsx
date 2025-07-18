@@ -253,10 +253,10 @@ export default function TeacherControlScreen() {
           {/* Botones de Control */}
           <View style={styles.controlRow}>
             <AnimatedButton
-              title="Encender/Apagar Todo"
+              title={currentLab?.lights.every((light) => light.isOn) ? "Apagar Todo" : "Encender Todo"}
               onPress={handleToggleAllLights}
               variant="secondary"
-              size="small"
+              size="medium"
               style={styles.controlButton}
             />
             <AnimatedButton
@@ -275,7 +275,7 @@ export default function TeacherControlScreen() {
               intensity={globalIntensity}
               onColorChange={handleGlobalColorChange}
               onIntensityChange={handleGlobalIntensityChange}
-              size={Math.min(width * 0.6, 220)}
+              size={Math.min(width * 0.9, 220)}
               showHSVValues={true}
             />
           </View>
@@ -394,11 +394,13 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 10,
     paddingHorizontal: SIZES.lg,
+    justifyContent: "space-between" as const,
   },
   headerContent: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     marginBottom: SIZES.sm,
+    justifyContent: "space-between" as const,
   },
   logo: {
     width: 80,
@@ -412,7 +414,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: "#FFFFFF",
-    fontSize: FONTS.size.xl,
+    fontSize: FONTS.size.md,
     fontWeight: FONTS.weight.bold as any,
   },
   headerSubtitle: {
@@ -560,10 +562,11 @@ const styles = StyleSheet.create({
   exitButton: {
     position: "absolute",
     top: SIZES.sm,
-    right: SIZES.md,
+    right: SIZES.sm,
     padding: SIZES.sm,
     borderRadius: SIZES.borderRadiusSmall,
     backgroundColor: "rgba(0, 0, 0, 0.2)",
+    marginTop: -SIZES.sm,
   },
   modalContainer: {
     flex: 1,

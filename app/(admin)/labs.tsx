@@ -1,13 +1,34 @@
 "use client"
 
 import React, { useState } from "react"
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Image, Alert, Animated, StyleSheet } from "react-native"
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Image,
+  Alert,
+  Animated,
+  Dimensions,
+  StyleSheet
+} from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../context/ThemeContext"
 import { useLab } from "../../context/LabContext"
+import { ColorWheelPicker } from "../../components/ColorWheelPicker"
 import { BUILDINGS } from "../../constants/Data"
 import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
 import { AnimatedButton } from "../../components/AnimatedButton"
+
+const { width } = Dimensions.get("window")
+
+interface HSVColor {
+  hue: number
+  saturation: number
+  value: number
+}
 
 interface Light {
   id: string
@@ -24,7 +45,7 @@ interface Lab {
   name: string
   description: string
   building: string
-  room: string // Added 'room' property to the Lab interface
+  room: string
   capacity: number
   isActive: boolean
   activeTeacher: string | null
@@ -33,11 +54,16 @@ interface Lab {
 
 export default function LabsScreen() {
   const { colors } = useTheme()
-  const { labs, updateLab } = useLab()
+  const { labs, updateLab, updateLight, toggleAllLights, applyGlobalSettings } = useLab()
   const [showModal, setShowModal] = useState(false)
+  const [showControlModal, setShowControlModal] = useState(false)
+  const [selectedLabForControl, setSelectedLabForControl] = useState<Lab | null>(null)
   const [editingLab, setEditingLab] = useState<Lab | null>(null)
   const [formData, setFormData] = useState<Partial<Lab>>({})
   const [lights, setLights] = useState<Light[]>([])
+  const [selectedColor, setSelectedColor] = useState("#FFFFFF")
+  const [globalIntensity, setGlobalIntensity] = useState(100)
+  const [showLightColorPicker, setShowLightColorPicker] = useState<string | null>(null)
 
   const fadeAnim = new Animated.Value(0)
 
@@ -73,6 +99,20 @@ export default function LabsScreen() {
     setEditingLab(null)
     setFormData({})
     setLights([])
+  }
+
+  const openControlModal = (lab: Lab) => {
+    setSelectedLabForControl(lab)
+    setShowControlModal(true)
+  }
+
+  const closeControlModal = () => {
+    setShowControlModal(false)
+    setSelectedLabForControl(null)
+    setShowLightColorPicker(null)
+    // Reset estados para evitar pantalla en blanco
+    setSelectedColor("#FFFFFF")
+    setGlobalIntensity(100)
   }
 
   const addLight = () => {
@@ -135,22 +175,87 @@ export default function LabsScreen() {
     ])
   }
 
+  // Funciones de control para el modal de control
+  const handleToggleAllLights = () => {
+    if (!selectedLabForControl) return
+
+    // Obtener el laboratorio actualizado
+    const currentLab = labs.find((l) => l.id === selectedLabForControl.id)
+    if (!currentLab) return
+
+    const allOn = currentLab.lights.every((light) => light.isOn)
+    const someOn = currentLab.lights.some((light) => light.isOn)
+
+    // Si todos están encendidos, apagar todos
+    // Si algunos están encendidos o todos apagados, encender todos
+    const newState = !allOn
+
+    toggleAllLights(selectedLabForControl.id, newState)
+
+    Alert.alert("Éxito", `Todos los focos ${newState ? "encendidos" : "apagados"}`)
+  }
+
+  const handleGlobalColorChange = (color: string, hsv: HSVColor) => {
+    setSelectedColor(color)
+    console.log("Admin Global Color HSV:", hsv)
+  }
+
+  const handleGlobalIntensityChange = (intensity: number, hsv: HSVColor) => {
+    setGlobalIntensity(intensity)
+    console.log("Admin Global Intensity HSV:", hsv)
+  }
+
+  const handleApplyGlobalSettings = () => {
+    if (!selectedLabForControl) return
+    applyGlobalSettings(selectedLabForControl.id, selectedColor, globalIntensity)
+    Alert.alert("Éxito", "Configuración global aplicada a todos los focos activos")
+  }
+
+  const handleLightToggle = (lightId: string) => {
+    if (!selectedLabForControl) return
+
+    // Obtener el laboratorio actualizado
+    const currentLab = labs.find((l) => l.id === selectedLabForControl.id)
+    if (!currentLab) return
+
+    const light = currentLab.lights.find((l) => l.id === lightId)
+    if (light) {
+      const newState = !light.isOn
+      updateLight(selectedLabForControl.id, lightId, { isOn: newState })
+      Alert.alert("Éxito", `Foco ${light.name} ${newState ? "encendido" : "apagado"}`)
+    }
+  }
+
+  const handleLightColorChange = (lightId: string, color: string, hsv: HSVColor) => {
+    if (!selectedLabForControl) return
+    updateLight(selectedLabForControl.id, lightId, { color })
+    console.log(`Admin Light ${lightId} Color HSV:`, hsv)
+  }
+
+  const handleLightIntensityChange = (lightId: string, intensity: number, hsv: HSVColor) => {
+    if (!selectedLabForControl) return
+    updateLight(selectedLabForControl.id, lightId, { intensity })
+    console.log(`Admin Light ${lightId} Intensity HSV:`, hsv)
+  }
+
+  // Obtener el laboratorio actualizado para el modal de control
+  const currentControlLab = selectedLabForControl ? labs.find((l) => l.id === selectedLabForControl.id) : null
+
   return (
     <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <View style={styles.headerContent}>
-          <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Gestión de Laboratorios</Text>
             <Text style={styles.headerSubtitle}>
               {labs.length} laboratorio{labs.length !== 1 ? "s" : ""} registrado{labs.length !== 1 ? "s" : ""}
             </Text>
           </View>
+          <TouchableOpacity style={styles.addButton} onPress={() => openModal()}>
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.addButton} onPress={() => openModal()}>
-          <Ionicons name="add" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
       </View>
 
       {/* Labs List */}
@@ -160,72 +265,80 @@ export default function LabsScreen() {
             key={lab.id}
             style={[styles.labCard, { backgroundColor: colors.surface, borderColor: colors.border }, SHADOWS.small]}
           >
-            <View style={styles.labHeader}>
-              <View style={styles.labInfo}>
-                <Text style={[styles.labName, { color: colors.text }]}>{lab.name}</Text>
-                <Text style={[styles.labDescription, { color: colors.textSecondary }]}>{lab.description}</Text>
-                <Text style={[styles.labLocation, { color: colors.textSecondary }]}>
-                  {lab.building} - {lab.room}
-                </Text>
-              </View>
-              <View style={styles.labActions}>
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.info }]}
-                  onPress={() => openModal(lab)}
-                >
+            <TouchableOpacity onPress={() => openControlModal(lab)} style={styles.labCardTouchable}>
+              <View style={styles.labHeader}>
+                <View style={styles.labInfo}>
+                  <Text style={[styles.labName, { color: colors.text }]}>{lab.name}</Text>
+                  <Text style={[styles.labDescription, { color: colors.textSecondary }]}>{lab.description}</Text>
+                  <Text style={[styles.labLocation, { color: colors.textSecondary }]}>
+                    {lab.building} - {lab.room}
+                  </Text>
+                </View>
+                <View style={styles.labActions}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: colors.info }]}
+                    onPress={(e) => {
+                      e.stopPropagation()
+                      openModal(lab)
+                    }}
+                  >
                   <Ionicons name="create-outline" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.error }]}
-                  onPress={() => handleDelete(lab.id)}
-                >
-                  <Ionicons name="trash-outline" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.labDetails}>
-              <View style={styles.detailRow}>
-                <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-                  Capacidad: {lab.capacity} estudiantes
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Ionicons name="bulb-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-                  {lab.lights.length} focos RGB configurados
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Ionicons
-                  name={lab.isActive ? "checkmark-circle" : "ellipse-outline"}
-                  size={16}
-                  color={lab.isActive ? colors.success : colors.textSecondary}
-                />
-                <Text style={[styles.detailText, { color: lab.isActive ? colors.success : colors.textSecondary }]}>
-                  {lab.isActive ? "Activo" : "Inactivo"}
-                </Text>
-              </View>
-            </View>
-
-            {lab.lights.length > 0 && (
-              <View style={styles.lightsSection}>
-                <Text style={[styles.lightsTitle, { color: colors.text }]}>Focos configurados:</Text>
-                <View style={styles.lightsList}>
-                  {lab.lights.slice(0, 3).map((light) => (
-                    <View key={light.id} style={[styles.lightChip, { backgroundColor: colors.primary }]}>
-                      <Text style={styles.lightChipText}>{light.name}</Text>
-                    </View>
-                  ))}
-                  {lab.lights.length > 3 && (
-                    <View style={[styles.lightChip, { backgroundColor: colors.textTertiary }]}>
-                      <Text style={styles.lightChipText}>+{lab.lights.length - 3} más</Text>
-                    </View>
-                  )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: colors.error }]}
+                    onPress={(e) => {
+                      e.stopPropagation()
+                      handleDelete(lab.id)
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#FFFFFF" />
+                  </TouchableOpacity>
                 </View>
               </View>
-            )}
+
+              <View style={styles.labDetails}>
+                <View style={styles.detailRow}>
+                  <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+                    Capacidad: {lab.capacity} estudiantes
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons name="bulb-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.detailText, { color: colors.textSecondary }]}>
+                    {lab.lights.length} focos RGB configurados
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Ionicons
+                    name={lab.isActive ? "checkmark-circle" : "ellipse-outline"}
+                    size={16}
+                    color={lab.isActive ? colors.success : colors.textSecondary}
+                  />
+                  <Text style={[styles.detailText, { color: lab.isActive ? colors.success : colors.textSecondary }]}>
+                    {lab.isActive ? "Activo" : "Inactivo"}
+                  </Text>
+                </View>
+              </View>
+
+              {lab.lights.length > 0 && (
+                <View style={styles.lightsSection}>
+                  <Text style={[styles.lightsTitle, { color: colors.text }]}>Focos configurados:</Text>
+                  <View style={styles.lightsList}>
+                    {lab.lights.slice(0, 3).map((light) => (
+                      <View key={light.id} style={[styles.lightChip, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.lightChipText}>{light.name}</Text>
+                      </View>
+                    ))}
+                    {lab.lights.length > 3 && (
+                      <View style={[styles.lightChip, { backgroundColor: colors.textTertiary }]}>
+                        <Text style={styles.lightChipText}>+{lab.lights.length - 3} más</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+            </TouchableOpacity>
           </Animated.View>
         ))}
 
@@ -242,7 +355,206 @@ export default function LabsScreen() {
         )}
       </ScrollView>
 
-      {/* Modal */}
+      {/* Modal de Control del Laboratorio */}
+      <Modal
+        visible={showControlModal}
+        animationType="slide"
+        presentationStyle="formSheet"
+        onRequestClose={closeControlModal}
+      >
+        <View style={[styles.controlModalContainer, { backgroundColor: colors.background }]}>
+          {/* Header del Modal de Control */}
+          <View style={[styles.controlModalHeader, { backgroundColor: colors.primary }]}>
+            <View style={styles.controlHeaderContent}>
+              <View style={styles.controlHeaderText}>
+                <Text style={styles.controlHeaderTitle}>{selectedLabForControl?.name}</Text>
+                <Text style={styles.controlHeaderSubtitle}>
+                  {selectedLabForControl?.building} - {selectedLabForControl?.room}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.closeControlButton} onPress={closeControlModal}>
+                <Ionicons name="close" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <ScrollView style={styles.controlContent} showsVerticalScrollIndicator={false}>
+            {/* Control General */}
+            <View style={[styles.globalControls, { backgroundColor: colors.card }, SHADOWS.medium]}>
+              <View style={styles.controlHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Control General</Text>
+                <View style={styles.statusIndicator}>
+                  <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+                  <Text style={[styles.statusText, { color: colors.textSecondary }]}>
+                    {currentControlLab?.lights.filter((l) => l.isOn).length}/{currentControlLab?.lights.length} activos
+                  </Text>
+                </View>
+              </View>
+
+              {/* Selector de Color Global Grande */}
+              <View style={styles.globalColorSection}>
+                <ColorWheelPicker
+                  selectedColor={selectedColor}
+                  intensity={globalIntensity}
+                  onColorChange={handleGlobalColorChange}
+                  onIntensityChange={handleGlobalIntensityChange}
+                  size={Math.min(width * 0.6, 220)}
+                  showHSVValues={true}
+                />
+              </View>
+
+              {/* Botones de Control */}
+              <View style={styles.controlRow}>
+                <AnimatedButton
+                  title={currentControlLab?.lights.every((l) => l.isOn) ? "Apagar Todo" : "Encender Todo"}
+                  onPress={handleToggleAllLights}
+                  variant="secondary"
+                  size="small"
+                  style={styles.controlButton}
+                />
+                <AnimatedButton
+                  title="Aplicar Configuración"
+                  onPress={handleApplyGlobalSettings}
+                  variant="primary"
+                  size="small"
+                  style={styles.controlButton}
+                />
+              </View>
+            </View>
+
+            {/* Focos Individuales */}
+            <View style={styles.lightsSection}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Focos Individuales</Text>
+
+              <View style={styles.lightsGrid}>
+                {currentControlLab?.lights.map((light) => (
+                  <View
+                    key={light.id}
+                    style={[
+                      styles.lightCard,
+                      { backgroundColor: colors.card, borderColor: light.isOn ? colors.primary : colors.border },
+                      light.isOn ? SHADOWS.glow : SHADOWS.small,
+                    ]}
+                  >
+                    {/* Light Header */}
+                    <View style={styles.lightHeader}>
+                      <View style={styles.lightInfo}>
+                        <Text style={[styles.lightName, { color: colors.text }]}>{light.name}</Text>
+                        <Text style={[styles.lightID, { color: colors.textSecondary }]}>ID: {light.id}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.powerButton,
+                          { backgroundColor: light.isOn ? colors.success : colors.textTertiary },
+                          light.isOn && SHADOWS.glow,
+                        ]}
+                        onPress={() => handleLightToggle(light.id)}
+                      >
+                        <Ionicons name={light.isOn ? "bulb" : "bulb-outline"} size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {light.isOn && (
+                      <>
+                        {/* Color Preview */}
+                        <TouchableOpacity
+                          style={[styles.colorPreview, { backgroundColor: light.color }, SHADOWS.small]}
+                          onPress={() => setShowLightColorPicker(light.id)}
+                        >
+                          <Text style={styles.colorPreviewText}>Cambiar Color</Text>
+                          <Ionicons name="color-palette-outline" size={16} color="#FFFFFF" />
+                        </TouchableOpacity>
+
+                        {/* Individual Intensity Control */}
+                        <View style={styles.lightIntensityControl}>
+                          <Text style={[styles.intensityLabel, { color: colors.textSecondary }]}>
+                            Intensidad: {light.intensity}%
+                          </Text>
+                          <View style={styles.miniSliderContainer}>
+                            <TouchableOpacity
+                              style={[styles.miniSliderButton, { backgroundColor: colors.cardElevated }]}
+                              onPress={() => {
+                                const newIntensity = Math.max(0, light.intensity - 10)
+                                handleLightIntensityChange(light.id, newIntensity, {
+                                  hue: 0,
+                                  saturation: 0,
+                                  value: newIntensity,
+                                })
+                              }}
+                            >
+                              <Ionicons name="remove" size={12} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                            <View style={[styles.miniSliderTrack, { backgroundColor: colors.border }]}>
+                              <View
+                                style={[
+                                  styles.miniSliderFill,
+                                  { backgroundColor: colors.primary, width: `${light.intensity}%` },
+                                ]}
+                              />
+                            </View>
+                            <TouchableOpacity
+                              style={[styles.miniSliderButton, { backgroundColor: colors.cardElevated }]}
+                              onPress={() => {
+                                const newIntensity = Math.min(100, light.intensity + 10)
+                                handleLightIntensityChange(light.id, newIntensity, {
+                                  hue: 0,
+                                  saturation: 0,
+                                  value: newIntensity,
+                                })
+                              }}
+                            >
+                              <Ionicons name="add" size={12} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Modal para selector de color individual */}
+          <Modal
+            visible={!!showLightColorPicker}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setShowLightColorPicker(null)}
+          >
+            <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+              <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                <TouchableOpacity onPress={() => setShowLightColorPicker(null)}>
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  {showLightColorPicker && currentControlLab?.lights.find((l) => l.id === showLightColorPicker)?.name}
+                </Text>
+                <View style={{ width: 24 }} />
+              </View>
+
+              <ScrollView style={styles.modalContent} contentContainerStyle={styles.modalContentContainer}>
+                {showLightColorPicker && (
+                  <ColorWheelPicker
+                    selectedColor={
+                      currentControlLab?.lights.find((l) => l.id === showLightColorPicker)?.color || "#FFFFFF"
+                    }
+                    intensity={currentControlLab?.lights.find((l) => l.id === showLightColorPicker)?.intensity || 100}
+                    onColorChange={(color, hsv) => handleLightColorChange(showLightColorPicker, color, hsv)}
+                    onIntensityChange={(intensity, hsv) =>
+                      handleLightIntensityChange(showLightColorPicker, intensity, hsv)
+                    }
+                    size={Math.min(width * 0.8, 280)}
+                    showHSVValues={true}
+                  />
+                )}
+              </ScrollView>
+            </View>
+          </Modal>
+        </View>
+      </Modal>
+
+      {/* Modal de Edición/Creación */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
@@ -482,7 +794,7 @@ export default function LabsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create({ 
   container: {
     flex: 1,
   },
@@ -493,7 +805,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: "row" as const,
-    alignItems: "center" as const,
+    alignItems: "flex-start" as const,
     marginBottom: SIZES.md,
   },
   logo: {
@@ -529,8 +841,10 @@ const styles = StyleSheet.create({
   labCard: {
     borderRadius: SIZES.borderRadius,
     borderWidth: 1,
-    padding: SIZES.lg,
     marginBottom: SIZES.md,
+  },
+  labCardTouchable: {
+    padding: SIZES.lg,
   },
   labHeader: {
     flexDirection: "row" as const,
@@ -580,6 +894,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#E0E0E0",
     paddingTop: SIZES.md,
+    padding: SIZES.lg,
   },
   lightsTitle: {
     fontSize: FONTS.size.sm,
@@ -629,6 +944,10 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: SIZES.lg,
+  },
+  modalContentContainer: {
+    padding: SIZES.lg,
+    alignItems: "center" as const,
   },
   formSection: {
     marginBottom: SIZES.xl,
@@ -752,5 +1071,165 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
     padding: SIZES.lg,
     borderTopWidth: 1,
+  },
+  // Estilos para el Modal de Control
+  controlModalContainer: {
+    flex: 1,
+  },
+  controlModalHeader: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: SIZES.lg,
+  },
+  controlHeaderContent: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+  },
+  controlHeaderText: {
+    flex: 1,
+  },
+  controlHeaderTitle: {
+    color: "#FFFFFF",
+    fontSize: FONTS.size.xl,
+    fontWeight: FONTS.weight.bold as any,
+  },
+  controlHeaderSubtitle: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: FONTS.size.sm,
+    marginTop: 2,
+  },
+  closeControlButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  controlContent: {
+    flex: 1,
+  },
+  globalControls: {
+    margin: SIZES.md,
+    padding: SIZES.lg,
+    borderRadius: SIZES.borderRadius,
+    alignItems: "center" as const,
+  },
+  controlHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    marginBottom: SIZES.lg,
+    width: "100%",
+  },
+  statusIndicator: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: SIZES.xs,
+  },
+  statusText: {
+    fontSize: FONTS.size.sm,
+    fontWeight: FONTS.weight.medium as any,
+  },
+  globalColorSection: {
+    alignItems: "center" as const,
+    marginBottom: SIZES.xl,
+  },
+  controlRow: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    width: "100%",
+    gap: SIZES.md,
+  },
+  controlButton: {
+    flex: 1,
+  },
+  lightsGrid: {
+    flexDirection: "column" as const,
+  },
+  lightCard: {
+    width: "100%",
+    borderRadius: SIZES.borderRadius,
+    borderWidth: 2,
+    padding: SIZES.md,
+    marginBottom: SIZES.md,
+  },
+  lightHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "flex-start" as const,
+    marginBottom: SIZES.lg,
+  },
+  lightInfo: {
+    flex: 1,
+  },
+  lightName: {
+    fontSize: FONTS.size.md,
+    fontWeight: FONTS.weight.semibold as any,
+    marginBottom: 2,
+  },
+  lightID: {
+    fontSize: FONTS.size.xs,
+  },
+  powerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  colorPreview: {
+    height: 40,
+    borderRadius: SIZES.borderRadiusSmall,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    marginBottom: SIZES.sm,
+    flexDirection: "row" as const,
+  },
+  colorPreviewText: {
+    color: "#FFFFFF",
+    fontSize: FONTS.size.sm,
+    fontWeight: FONTS.weight.semibold as any,
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    marginRight: SIZES.xs,
+  },
+  lightIntensityControl: {
+    marginTop: SIZES.sm,
+  },
+  intensityLabel: {
+    fontSize: FONTS.size.xs,
+    fontWeight: FONTS.weight.medium as any,
+    marginBottom: SIZES.xs,
+  },
+  miniSliderContainer: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+  },
+  miniSliderButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  miniSliderTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: SIZES.xs,
+    overflow: "hidden" as const,
+  },
+  miniSliderFill: {
+    height: "100%",
+    borderRadius: 3,
   },
 })

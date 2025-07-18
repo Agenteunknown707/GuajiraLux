@@ -77,7 +77,6 @@ export default function TeacherProfileScreen() {
     <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
-        <Image source={{ uri: "https://s3.amazonaws.com/cdn.proxybk.com/logo-uniguajira.png" }} style={styles.logo} resizeMode="contain" />
         <View style={styles.headerText}>
           <Text style={styles.headerespacio}></Text>
             <Text style={styles.headerTitle}>Mi Perfil</Text>
@@ -99,7 +98,7 @@ export default function TeacherProfileScreen() {
         >
           <View style={styles.photoContainer}>
             <Image
-              source={require("../../assets/images/gael.jpeg")}
+              source={require("../../assets/images/galla2.jpg")}
               style={styles.profilePhoto}
             />
             <TouchableOpacity style={[styles.photoEditButton, { backgroundColor: colors.primary }]}>
@@ -491,11 +490,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 50,
-    paddingBottom: 10,
+    paddingTop: 60,
+    paddingBottom: 20,
     paddingHorizontal: SIZES.lg,
-    alignItems: "flex-start" as const,
+    alignItems: "center" as const,
     flexDirection: "row" as const,
+    justifyContent: "center" as const,
   },
   logo: {
     width: 80,
@@ -506,6 +506,8 @@ const styles = StyleSheet.create({
   },
   headerText: {
     marginLeft: SIZES.md,
+    alignItems: "center" as const,
+    
   },
   headerTitle: {
     color: "#FFFFFF",

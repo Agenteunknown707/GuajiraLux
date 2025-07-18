@@ -277,7 +277,7 @@ export const ColorWheelPicker: React.FC<ColorWheelPickerProps> = ({
             style={[styles.sliderButton, { backgroundColor: colors.cardElevated }]}
             onPress={() => handleIntensityChange(Math.max(0, intensity - 10))}
           >
-            <Ionicons name="remove" size={16} color={colors.text} />
+            <Ionicons name="remove" size={10} color={colors.text} />
           </TouchableOpacity>
 
           <View style={[styles.sliderTrack, { backgroundColor: colors.border }]}>
@@ -288,7 +288,7 @@ export const ColorWheelPicker: React.FC<ColorWheelPickerProps> = ({
             style={[styles.sliderButton, { backgroundColor: colors.cardElevated }]}
             onPress={() => handleIntensityChange(Math.min(100, intensity + 10))}
           >
-            <Ionicons name="add" size={16} color={colors.text} />
+            <Ionicons name="add" size={10} color={colors.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -359,7 +359,6 @@ const styles = StyleSheet.create({
   intensityContainer: {
     width: "100%",
     marginTop: SIZES.lg,
-    paddingHorizontal: SIZES.md,
   },
   intensityLabel: {
     fontSize: FONTS.size.sm,
@@ -382,7 +381,7 @@ const styles = StyleSheet.create({
   },
   sliderTrack: {
     flex: 1,
-    height: 8,
+    height: 10,
     borderRadius: 4,
     marginHorizontal: SIZES.md,
     overflow: "hidden" as const,

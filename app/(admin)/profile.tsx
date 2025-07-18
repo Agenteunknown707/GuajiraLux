@@ -22,6 +22,7 @@ export default function AdminProfileScreen() {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+    photo: user?.photo || "/placeholder.svg?height=100&width=100",
   })
 
   const fadeAnim = new Animated.Value(0)
@@ -73,7 +74,6 @@ export default function AdminProfileScreen() {
     <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <Image source={{ uri: "/assets/images/uniguajira-logo.png" }} style={styles.logo} resizeMode="contain" />
         <Text style={styles.headerTitle}>Mi Perfil</Text>
         <Text style={styles.headerSubtitle}>Administrador del Sistema</Text>
       </View>
@@ -92,7 +92,7 @@ export default function AdminProfileScreen() {
         >
           <View style={styles.photoContainer}>
             <Image
-              source={{ uri: user?.photo || "/placeholder.svg?height=120&width=120" }}
+              source={require('../../assets/images/carlitos.jpg')}
               style={styles.profilePhoto}
             />
             <TouchableOpacity style={[styles.photoEditButton, { backgroundColor: colors.primary }]}>
@@ -396,7 +396,7 @@ export default function AdminProfileScreen() {
             title="Cerrar Sesión"
             onPress={handleLogout}
             variant="outline"
-            style={[styles.logoutButton, { borderColor: colors.error }]}
+            style={styles.logoutButton}
             textStyle={{ color: colors.error }}
           />
         </Animated.View>
@@ -410,15 +410,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingTop: 50,
-    paddingBottom: 30,
+    paddingTop: 70,
+    paddingBottom: 20,
     paddingHorizontal: SIZES.lg,
     alignItems: "center" as const,
   },
   logo: {
-    width: 60,
+    width: 80,
     height: 60,
-    marginBottom: SIZES.md,
+    marginRight: SIZES.md,
+    backgroundColor: "rgba(255, 255, 255, 0.92)",
+    borderRadius: SIZES.borderRadiusSmall,
+    marginBottom: SIZES.sm,
   },
   headerTitle: {
     color: "#FFFFFF",
