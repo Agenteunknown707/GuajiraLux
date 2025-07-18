@@ -38,6 +38,7 @@ export default function TeacherControlScreen() {
     toggleAllLights,
     applyGlobalSettings,
     clearActivePractice,
+    updateLab,
   } = useLab()
   const { colors } = useTheme()
 
@@ -90,6 +91,20 @@ export default function TeacherControlScreen() {
           }))
           setFocoNombresIds(nombresIds)
           console.log("Focos obtenidos:", nombresIds)
+
+          // Actualizar los light.id de todos los labs en el contexto global
+          labs.forEach(lab => {
+            const newLights = lab.lights.map(light => {
+              const match = nombresIds.find((f: { nombre: string; device_id: string }) => f.nombre === light.name)
+              if (match) {
+                return { ...light, id: match.device_id }
+              }
+              return light
+            })
+            updateLab(lab.id, { lights: newLights })
+            // Log para verificar los ids asignados
+            console.log(`Lab ${lab.id} luces después de asignar device_id:`, newLights.map(l => ({ name: l.name, id: l.id })))
+          })
         }
       } catch (error) {
         console.error("Error al obtener focos:", error)
@@ -164,10 +179,23 @@ export default function TeacherControlScreen() {
     Alert.alert("Éxito", "Configuración aplicada a todos los focos activos")
   }
 
-  const handleLightToggle = (lightId: string) => {
+  const handleLightToggle = async (lightId: string) => {
     if (!selectedLabId) return
     const light = currentLab?.lights.find((l) => l.id === lightId)
     if (light) {
+      console.log('Valor de lightId:', lightId)
+      // Llamada a la API para encender/apagar el foco individual
+      try {
+        const payload = {
+          device_id: lightId,
+          turn_on: !light.isOn,
+        }
+        console.log('POST /api/foco/switch payload:', payload)
+        const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/switch", payload)
+        console.log(`Foco ${lightId} cambiado a ${!light.isOn ? 'ON' : 'OFF'}. Respuesta:`, res.data)
+      } catch (error) {
+        console.error(`Error al cambiar estado del foco ${lightId}:`, error)
+      }
       updateLight(selectedLabId, lightId, { isOn: !light.isOn })
     }
   }
@@ -341,7 +369,22 @@ export default function TeacherControlScreen() {
                 <View style={styles.lightHeader}>
                   <View style={styles.lightInfo}>
                     <Text style={[styles.lightName, { color: colors.text }]}>{light.name}</Text>
-                    <Text style={[styles.lightIP, { color: colors.textSecondary }]}>IP: {light.ip}</Text>
+                    {/* Log para depuración: mostrar cómo se relacionan los nombres y device_id */}
+                    {(() => {
+                      const focoByName = focoNombresIds.find(f => f.nombre === light.name)
+                      const focoByIndex = focoNombresIds[typeof light.id === 'string' ? parseInt(light.id.replace(/[^0-9]/g, '')) - 1 : -1]
+                      console.log('DEBUG light:', light, 'focoByName:', focoByName, 'focoByIndex:', focoByIndex)
+                      return null
+                    })()}
+                    {/* Mostrar el device_id correspondiente en vez de la IP, buscando por nombre o por índice */}
+                    <Text style={[styles.lightIP, { color: colors.textSecondary }]}>ID: {(() => {
+                      const foco = focoNombresIds.find(f => f.nombre === light.name)
+                      if (foco) return foco.device_id
+                      // Intentar por índice si el nombre no coincide
+                      const idx = typeof light.id === 'string' ? parseInt(light.id.replace(/[^0-9]/g, '')) - 1 : -1
+                      if (focoNombresIds[idx]) return focoNombresIds[idx].device_id
+                      return 'N/A'
+                    })()}</Text>
                   </View>
                   <TouchableOpacity
                     style={[
