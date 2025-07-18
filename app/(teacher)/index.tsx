@@ -17,6 +17,7 @@ import Animated, {
   withSpring,
   interpolate,
 } from "react-native-reanimated"
+import axios from "axios"
 
 const { width } = Dimensions.get("window")
 
@@ -45,6 +46,7 @@ export default function TeacherControlScreen() {
   const [selectedColor, setSelectedColor] = useState("#FFFFFF")
   const [globalIntensity, setGlobalIntensity] = useState(100)
   const [showLightColorPicker, setShowLightColorPicker] = useState<string | null>(null)
+  const [focoNombresIds, setFocoNombresIds] = useState<{ nombre: string; device_id: string }[]>([])
 
   // Shared values para animaciones
   const opacity = useSharedValue(0)
@@ -73,6 +75,28 @@ export default function TeacherControlScreen() {
       setShowLabModal(true)
     }
   }, [selectedLabId, assignedLabs])
+
+  useEffect(() => {
+    // Llamada al endpoint al iniciar el componente
+    const fetchFocos = async () => {
+      try {
+        const response = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/focos-salon", {
+          id_salon: 1,
+        })
+        if (response.data && response.data.status === "ok" && Array.isArray(response.data.focos)) {
+          const nombresIds = response.data.focos.map((foco: any) => ({
+            nombre: foco.nombre,
+            device_id: foco.device_id,
+          }))
+          setFocoNombresIds(nombresIds)
+          console.log("Focos obtenidos:", nombresIds)
+        }
+      } catch (error) {
+        console.error("Error al obtener focos:", error)
+      }
+    }
+    fetchFocos()
+  }, [])
 
   const handleLabSelection = (labId: string) => {
     const success = activateLab(labId, user?.id || "")
@@ -104,9 +128,23 @@ export default function TeacherControlScreen() {
     ])
   }
 
-  const handleToggleAllLights = () => {
+  const handleToggleAllLights = async () => {
     if (!currentLab || !selectedLabId) return
     const allOn = currentLab.lights.every((light) => light.isOn)
+    // Nuevo endpoint para encender/apagar todos los focos de una vez
+    const deviceIds = focoNombresIds.map(foco => foco.device_id)
+    try {
+      console.log('Enviando a /api/foco/switch-all:', { device_ids: deviceIds, turn_on: !allOn })
+      const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/switch-all", {
+        device_ids: deviceIds,
+        turn_on: !allOn,
+      })
+      console.log(`Respuesta de /api/foco/switch-all:`, res.data)
+      console.log(`Focos ${!allOn ? 'encendidos' : 'apagados'}:`, deviceIds)
+    } catch (error) {
+      console.error("Error al cambiar estado de los focos:", error)
+    }
+    // Llamar a la función toggleAllLights del contexto
     toggleAllLights(selectedLabId, !allOn)
   }
 
