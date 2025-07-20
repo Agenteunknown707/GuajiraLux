@@ -70,7 +70,7 @@ export const MOCK_LABS = [
     activeTeacher: null,
     lights: [
       {
-        id: "light1",
+        id: "eb60007e1dd10c2a94ylj6",
         name: "Foco Mesa 1",
         ip: "192.168.1.101",
         position: { x: 1, y: 1 },
@@ -79,7 +79,7 @@ export const MOCK_LABS = [
         intensity: 100,
       },
       {
-        id: "light2",
+        id: "ebea478e587ff3b4e3xphk",
         name: "Foco Mesa 2",
         ip: "192.168.1.102",
         position: { x: 1, y: 2 },
@@ -88,7 +88,7 @@ export const MOCK_LABS = [
         intensity: 100,
       },
       {
-        id: "light3",
+        id: "ebb9f6ba0f123c65bftm38",
         name: "Foco Mesa 3",
         ip: "192.168.1.103",
         position: { x: 2, y: 1 },
@@ -97,7 +97,7 @@ export const MOCK_LABS = [
         intensity: 100,
       },
       {
-        id: "light4",
+        id: "ebce9bd65682fdb7c4qlmf",
         name: "Foco Mesa 4",
         ip: "192.168.1.104",
         position: { x: 2, y: 2 },

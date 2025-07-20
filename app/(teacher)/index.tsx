@@ -1,23 +1,23 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Dimensions, StyleSheet, Modal } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import axios from "axios"
+import { useEffect, useState } from "react"
+import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated"
+import { AnimatedButton } from "../../components/AnimatedButton"
+import { ColorWheelPicker } from "../../components/ColorWheelPicker"
+import { LabSelectionModal } from "../../components/LabSelectionModal"
+import { FONTS, SHADOWS, SIZES } from "../../constants/Colors"
 import { useAuth } from "../../context/AuthContext"
 import { useLab } from "../../context/LabContext"
 import { useTheme } from "../../context/ThemeContext"
-import { LabSelectionModal } from "../../components/LabSelectionModal"
-import { ColorWheelPicker } from "../../components/ColorWheelPicker"
-import { AnimatedButton } from "../../components/AnimatedButton"
-import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  interpolate,
-} from "react-native-reanimated"
-import axios from "axios"
 
 const { width } = Dimensions.get("window")
 
@@ -25,6 +25,50 @@ interface HSVColor {
   hue: number
   saturation: number
   value: number
+}
+
+// Función para convertir color hexadecimal a HSV
+const hexToHsv = (hex: string): HSVColor => {
+  // Remover el # si existe
+  hex = hex.replace('#', '')
+  
+  // Convertir hex a RGB
+  const r = parseInt(hex.substr(0, 2), 16) / 255
+  const g = parseInt(hex.substr(2, 2), 16) / 255
+  const b = parseInt(hex.substr(4, 2), 16) / 255
+  
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const diff = max - min
+  
+  let hue = 0
+  let saturation = 0
+  const value = max
+  
+  if (diff !== 0) {
+    saturation = diff / max
+    
+    switch (max) {
+      case r:
+        hue = ((g - b) / diff) % 6
+        break
+      case g:
+        hue = (b - r) / diff + 2
+        break
+      case b:
+        hue = (r - g) / diff + 4
+        break
+    }
+    
+    hue *= 60
+    if (hue < 0) hue += 360
+  }
+  
+  return {
+    hue: Math.round(hue),
+    saturation: Math.round(saturation * 1000), // Convertir a escala 0-1000
+    value: Math.round(value * 100) // Convertir a escala 0-100
+  }
 }
 
 export default function TeacherControlScreen() {
@@ -173,10 +217,71 @@ export default function TeacherControlScreen() {
     console.log("Global Intensity HSV:", hsv)
   }
 
-  const handleApplyGlobalSettings = () => {
+  const handleApplyGlobalSettings = async () => {
     if (!currentLab || !selectedLabId) return
-    applyGlobalSettings(selectedLabId, selectedColor, globalIntensity)
-    Alert.alert("Éxito", "Configuración aplicada a todos los focos activos")
+    
+    // Obtener los valores HSV del color seleccionado
+    const hsvColor = hexToHsv(selectedColor)
+    
+    console.log('=== INICIANDO APLICACIÓN DE CONFIGURACIÓN GLOBAL ===')
+    console.log('Color seleccionado (hex):', selectedColor)
+    console.log('Intensidad global:', globalIntensity)
+    console.log('Valores HSV convertidos:', hsvColor)
+    
+    try {
+      const payload = {
+        device_ids: [
+          "eb60007e1dd10c2a94ylj6",
+          "ebea478e587ff3b4e3xphk",
+          "ebb9f6ba0f123c65bftm38",
+          "ebce9bd65682fdb7c4qlmf"
+        ],
+        h: hsvColor.hue,
+        s: hsvColor.saturation,
+        v: hsvColor.value
+      }
+      
+      console.log('=== PETICIÓN POST /api/foco/color-all ===')
+      console.log('URL:', "https://756077eced4b.ngrok-free.app/api/foco/color-all")
+      console.log('Payload completo:', JSON.stringify(payload, null, 2))
+      console.log('Device IDs:', payload.device_ids)
+      console.log('Hue (H):', payload.h)
+      console.log('Saturation (S):', payload.s)
+      console.log('Value (V):', payload.v)
+      
+      const startTime = Date.now()
+      const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/color-all", payload)
+      const endTime = Date.now()
+      
+      console.log('=== RESPUESTA DEL SERVIDOR ===')
+      console.log('Tiempo de respuesta:', endTime - startTime, 'ms')
+      console.log('Status:', res.status)
+      console.log('Status Text:', res.statusText)
+      console.log('Headers:', res.headers)
+      console.log('Datos de respuesta:', JSON.stringify(res.data, null, 2))
+      
+      // Aplicar configuración local
+      applyGlobalSettings(selectedLabId, selectedColor, globalIntensity)
+      console.log('=== CONFIGURACIÓN APLICADA EXITOSAMENTE ===')
+      Alert.alert("Éxito", "Configuración aplicada a todos los focos activos")
+    } catch (error: any) {
+      console.error('=== ERROR EN LA PETICIÓN ===')
+      console.error('Tipo de error:', error?.constructor?.name || 'Unknown')
+      console.error('Mensaje de error:', error?.message || 'Error desconocido')
+      
+      if (error?.response) {
+        console.error('Status del error:', error.response.status)
+        console.error('Datos del error:', JSON.stringify(error.response.data, null, 2))
+        console.error('Headers del error:', error.response.headers)
+      } else if (error?.request) {
+        console.error('No se recibió respuesta del servidor')
+        console.error('Request:', error.request)
+      } else {
+        console.error('Error en la configuración de la petición:', error?.message || 'Error desconocido')
+      }
+      
+      Alert.alert("Error", "No se pudo aplicar la configuración global")
+    }
   }
 
   const handleLightToggle = async (lightId: string) => {
@@ -200,16 +305,46 @@ export default function TeacherControlScreen() {
     }
   }
 
-  const handleLightColorChange = (lightId: string, color: string, hsv: HSVColor) => {
+  const handleLightColorChange = async (lightId: string, color: string, hsv: HSVColor) => {
     if (!selectedLabId) return
     updateLight(selectedLabId, lightId, { color })
     console.log(`Light ${lightId} HSV:`, hsv)
+
+    // Enviar petición POST al endpoint colordata
+    try {
+      const payload = {
+        device_id: lightId,
+        h: hsv.hue,
+        s: hsv.saturation,
+        v: hsv.value,
+      }
+      console.log('POST /api/foco/colordata payload:', payload)
+      const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/colordata", payload)
+      console.log(`Respuesta de /api/foco/colordata para ${lightId}:`, res.data)
+    } catch (error) {
+      console.error(`Error al cambiar color del foco ${lightId}:`, error)
+    }
   }
 
-  const handleLightIntensityChange = (lightId: string, intensity: number, hsv: HSVColor) => {
+  const handleLightIntensityChange = async (lightId: string, intensity: number, hsv: HSVColor) => {
     if (!selectedLabId) return
     updateLight(selectedLabId, lightId, { intensity })
     console.log(`Light ${lightId} Intensity HSV:`, hsv)
+
+    // Enviar petición POST al endpoint colordata
+    try {
+      const payload = {
+        device_id: lightId,
+        h: hsv.hue,
+        s: hsv.saturation,
+        v: hsv.value,
+      }
+      console.log('POST /api/foco/colordata payload:', payload)
+      const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/colordata", payload)
+      console.log(`Respuesta de /api/foco/colordata para ${lightId}:`, res.data)
+    } catch (error) {
+      console.error(`Error al cambiar intensidad del foco ${lightId}:`, error)
+    }
   }
 
   const handleClearActivePractice = () => {
@@ -436,7 +571,6 @@ export default function TeacherControlScreen() {
         visible={!!showLightColorPicker}
         animationType="slide"
         presentationStyle="formSheet"
-        transparent={true}
         onRequestClose={() => setShowLightColorPicker(null)}
       >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
