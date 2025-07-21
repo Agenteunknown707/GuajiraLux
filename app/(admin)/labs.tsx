@@ -1,24 +1,11 @@
 "use client"
 
 import React, { useState } from "react"
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  Image,
-  Alert,
-  Animated,
-  Dimensions,
-  StyleSheet
-} from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Image, Alert, Dimensions, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../context/ThemeContext"
 import { useLab } from "../../context/LabContext"
 import { ColorWheelPicker } from "../../components/ColorWheelPicker"
-import { BUILDINGS } from "../../constants/Data"
 import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
 import { AnimatedButton } from "../../components/AnimatedButton"
 
@@ -33,7 +20,6 @@ interface HSVColor {
 interface Light {
   id: string
   name: string
-  ip: string
   position: { x: number; y: number }
   isOn: boolean
   color: string
@@ -43,9 +29,6 @@ interface Light {
 interface Lab {
   id: string
   name: string
-  description: string
-  building: string
-  room: string
   capacity: number
   isActive: boolean
   activeTeacher: string | null
@@ -65,15 +48,7 @@ export default function LabsScreen() {
   const [globalIntensity, setGlobalIntensity] = useState(100)
   const [showLightColorPicker, setShowLightColorPicker] = useState<string | null>(null)
 
-  const fadeAnim = new Animated.Value(0)
-
-  React.useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start()
-  }, [])
+  React.useEffect(() => {}, [])
 
   const openModal = (lab?: Lab) => {
     if (lab) {
@@ -84,9 +59,6 @@ export default function LabsScreen() {
       setEditingLab(null)
       setFormData({
         name: "",
-        description: "",
-        building: BUILDINGS[0].name,
-        room: "",
         capacity: 20,
       })
       setLights([])
@@ -96,9 +68,12 @@ export default function LabsScreen() {
 
   const closeModal = () => {
     setShowModal(false)
-    setEditingLab(null)
-    setFormData({})
-    setLights([])
+    // Limpiar estados después de un pequeño delay para evitar pantalla en blanco
+    setTimeout(() => {
+      setEditingLab(null)
+      setFormData({})
+      setLights([])
+    }, 100)
   }
 
   const openControlModal = (lab: Lab) => {
@@ -108,18 +83,19 @@ export default function LabsScreen() {
 
   const closeControlModal = () => {
     setShowControlModal(false)
-    setSelectedLabForControl(null)
-    setShowLightColorPicker(null)
-    // Reset estados para evitar pantalla en blanco
-    setSelectedColor("#FFFFFF")
-    setGlobalIntensity(100)
+    // Limpiar estados después de un pequeño delay para evitar pantalla en blanco
+    setTimeout(() => {
+      setSelectedLabForControl(null)
+      setShowLightColorPicker(null)
+      setSelectedColor("#FFFFFF")
+      setGlobalIntensity(100)
+    }, 100)
   }
 
   const addLight = () => {
     const newLight: Light = {
       id: `light_${Date.now()}`,
       name: `Foco ${lights.length + 1}`,
-      ip: `192.168.1.${100 + lights.length + 1}`,
       position: { x: 1, y: 1 },
       isOn: false,
       color: "#FFFFFF",
@@ -137,7 +113,7 @@ export default function LabsScreen() {
   }
 
   const handleSave = () => {
-    if (!formData.name || !formData.building || !formData.room) {
+    if (!formData.name) {
       Alert.alert("Error", "Por favor completa todos los campos obligatorios")
       return
     }
@@ -145,9 +121,6 @@ export default function LabsScreen() {
     const labData: Lab = {
       id: editingLab?.id || `lab_${Date.now()}`,
       name: formData.name!,
-      description: formData.description || "",
-      building: formData.building!,
-      room: formData.room!,
       capacity: formData.capacity || 20,
       isActive: editingLab?.isActive || false,
       activeTeacher: editingLab?.activeTeacher || null,
@@ -242,7 +215,7 @@ export default function LabsScreen() {
   const currentControlLab = selectedLabForControl ? labs.find((l) => l.id === selectedLabForControl.id) : null
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <View style={styles.headerContent}>
@@ -252,16 +225,16 @@ export default function LabsScreen() {
               {labs.length} laboratorio{labs.length !== 1 ? "s" : ""} registrado{labs.length !== 1 ? "s" : ""}
             </Text>
           </View>
-          <TouchableOpacity style={styles.addButton} onPress={() => openModal()}>
-            <Ionicons name="add" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+        <TouchableOpacity style={styles.addButton} onPress={() => openModal()}>
+          <Ionicons name="add" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
         </View>
       </View>
 
       {/* Labs List */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {labs.map((lab) => (
-          <Animated.View
+          <View
             key={lab.id}
             style={[styles.labCard, { backgroundColor: colors.surface, borderColor: colors.border }, SHADOWS.small]}
           >
@@ -282,7 +255,7 @@ export default function LabsScreen() {
                       openModal(lab)
                     }}
                   >
-                  <Ionicons name="create-outline" size={16} color="#FFFFFF" />
+                    <Ionicons name="create-outline" size={16} color="#FFFFFF" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.actionButton, { backgroundColor: colors.error }]}
@@ -339,7 +312,7 @@ export default function LabsScreen() {
                 </View>
               )}
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         ))}
 
         {labs.length === 0 && (
@@ -355,11 +328,195 @@ export default function LabsScreen() {
         )}
       </ScrollView>
 
+      {/* Modal de Edición/Creación */}
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        statusBarTranslucent={false}
+        onRequestClose={closeModal}
+      >
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={closeModal}>
+              <Ionicons name="close" size={24} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {editingLab ? "Editar Laboratorio" : "Nuevo Laboratorio"}
+            </Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {/* Basic Info */}
+            <View style={styles.formSection}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Información Básica</Text>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nombre *</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
+                  ]}
+                  value={formData.name}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
+                  placeholder="Ej: Laboratorio de Física I"
+                  placeholderTextColor={colors.textTertiary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Capacidad</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
+                  ]}
+                  value={formData.capacity?.toString()}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, capacity: Number.parseInt(text) || 20 }))}
+                  placeholder="20"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            {/* Lights Configuration */}
+            <View style={styles.formSection}>
+              <View style={styles.lightsHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Configuración de Focos</Text>
+                <TouchableOpacity
+                  style={[styles.addLightButton, { backgroundColor: colors.secondary }]}
+                  onPress={addLight}
+                >
+                  <Ionicons name="add" size={16} color="#FFFFFF" />
+                  <Text style={styles.addLightText}>Agregar Foco</Text>
+                </TouchableOpacity>
+              </View>
+
+              {lights.map((light, index) => (
+                <View
+                  key={light.id}
+                  style={[styles.lightConfig, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                >
+                  <View style={styles.lightConfigHeader}>
+                    <Text style={[styles.lightConfigTitle, { color: colors.text }]}>Foco {index + 1}</Text>
+                    <TouchableOpacity
+                      style={[styles.removeLightButton, { backgroundColor: colors.error }]}
+                      onPress={() => removeLight(light.id)}
+                    >
+                      <Ionicons name="trash-outline" size={14} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.lightConfigRow}>
+                    <View style={[styles.lightConfigInput, { flex: 2 }]}>
+                      <Text style={[styles.lightConfigLabel, { color: colors.textSecondary }]}>Nombre</Text>
+                      <TextInput
+                        style={[
+                          styles.lightInput,
+                          { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+                        ]}
+                        value={light.name}
+                        onChangeText={(text) => updateLightData(light.id, { name: text })}
+                        placeholder="Nombre del foco"
+                        placeholderTextColor={colors.textTertiary}
+                      />
+                    </View>
+
+                    <View style={[styles.lightConfigInput, { flex: 1 }]}>
+                      <Text style={[styles.lightConfigLabel, { color: colors.textSecondary }]}>IP</Text>
+                      <TextInput
+                        style={[
+                          styles.lightInput,
+                          { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+                        ]}
+                        value={light.id}
+                        onChangeText={(text) => updateLightData(light.id, { id: text })}
+                        placeholder="jcdjojciwj38832"
+                        placeholderTextColor={colors.textTertiary}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.lightConfigRow}>
+                    <View style={styles.lightConfigInput}>
+                      <Text style={[styles.lightConfigLabel, { color: colors.textSecondary }]}>Posición X</Text>
+                      <TextInput
+                        style={[
+                          styles.lightInput,
+                          { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+                        ]}
+                        value={light.position.x.toString()}
+                        onChangeText={(text) =>
+                          updateLightData(light.id, {
+                            position: { ...light.position, x: Number.parseFloat(text) || 1 },
+                          })
+                        }
+                        placeholder="1"
+                        placeholderTextColor={colors.textTertiary}
+                        keyboardType="numeric"
+                      />
+                    </View>
+
+                    <View style={styles.lightConfigInput}>
+                      <Text style={[styles.lightConfigLabel, { color: colors.textSecondary }]}>Posición Y</Text>
+                      <TextInput
+                        style={[
+                          styles.lightInput,
+                          { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+                        ]}
+                        value={light.position.y.toString()}
+                        onChangeText={(text) =>
+                          updateLightData(light.id, {
+                            position: { ...light.position, y: Number.parseFloat(text) || 1 },
+                          })
+                        }
+                        placeholder="1"
+                        placeholderTextColor={colors.textTertiary}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  </View>
+                </View>
+              ))}
+
+              {lights.length === 0 && (
+                <View style={styles.noLightsState}>
+                  <Ionicons name="bulb-outline" size={32} color={colors.textTertiary} />
+                  <Text style={[styles.noLightsText, { color: colors.textSecondary }]}>No hay focos configurados</Text>
+                  <Text style={[styles.noLightsSubtext, { color: colors.textTertiary }]}>
+                    Agrega focos para controlar la iluminación
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+
+          {/* Modal Footer */}
+          <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
+            <AnimatedButton
+              title="Cancelar"
+              onPress={closeModal}
+              variant="outline"
+              style={{ flex: 1, marginRight: SIZES.sm }}
+            />
+            <AnimatedButton
+              title={editingLab ? "Actualizar" : "Crear"}
+              onPress={handleSave}
+              style={{ flex: 1, marginLeft: SIZES.sm }}
+            />
+          </View>
+        </View>
+      </Modal>
+
       {/* Modal de Control del Laboratorio */}
       <Modal
         visible={showControlModal}
         animationType="slide"
         presentationStyle="formSheet"
+        statusBarTranslucent={false}
         onRequestClose={closeControlModal}
       >
         <View style={[styles.controlModalContainer, { backgroundColor: colors.background }]}>
@@ -368,9 +525,6 @@ export default function LabsScreen() {
             <View style={styles.controlHeaderContent}>
               <View style={styles.controlHeaderText}>
                 <Text style={styles.controlHeaderTitle}>{selectedLabForControl?.name}</Text>
-                <Text style={styles.controlHeaderSubtitle}>
-                  {selectedLabForControl?.building} - {selectedLabForControl?.room}
-                </Text>
               </View>
               <TouchableOpacity style={styles.closeControlButton} onPress={closeControlModal}>
                 <Ionicons name="close" size={24} color="#FFFFFF" />
@@ -520,6 +674,7 @@ export default function LabsScreen() {
             visible={!!showLightColorPicker}
             animationType="slide"
             presentationStyle="pageSheet"
+            statusBarTranslucent={false}
             onRequestClose={() => setShowLightColorPicker(null)}
           >
             <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
@@ -553,248 +708,11 @@ export default function LabsScreen() {
           </Modal>
         </View>
       </Modal>
-
-      {/* Modal de Edición/Creación */}
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={closeModal}>
-              <Ionicons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {editingLab ? "Editar Laboratorio" : "Nuevo Laboratorio"}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            {/* Basic Info */}
-            <View style={styles.formSection}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Información Básica</Text>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Nombre *</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-                  ]}
-                  value={formData.name}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
-                  placeholder="Ej: Laboratorio de Física I"
-                  placeholderTextColor={colors.textTertiary}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Descripción</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.textArea,
-                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-                  ]}
-                  value={formData.description}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, description: text }))}
-                  placeholder="Descripción del laboratorio..."
-                  placeholderTextColor={colors.textTertiary}
-                  multiline
-                  numberOfLines={3}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Bloque *</Text>
-                <View style={[styles.pickerContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {BUILDINGS.map((building) => (
-                      <TouchableOpacity
-                        key={building.id}
-                        style={[
-                          styles.pickerOption,
-                          {
-                            backgroundColor: formData.building === building.name ? colors.primary : "transparent",
-                          },
-                        ]}
-                        onPress={() => setFormData((prev) => ({ ...prev, building: building.name }))}
-                      >
-                        <Text
-                          style={[
-                            styles.pickerOptionText,
-                            { color: formData.building === building.name ? "#FFFFFF" : colors.text },
-                          ]}
-                        >
-                          {building.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Sala *</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-                  ]}
-                  value={formData.room}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, room: text }))}
-                  placeholder="Ej: A-201"
-                  placeholderTextColor={colors.textTertiary}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Capacidad</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-                  ]}
-                  value={formData.capacity?.toString()}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, capacity: Number.parseInt(text) || 20 }))}
-                  placeholder="20"
-                  placeholderTextColor={colors.textTertiary}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            {/* Lights Configuration */}
-            <View style={styles.formSection}>
-              <View style={styles.lightsHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Configuración de Focos</Text>
-                <TouchableOpacity
-                  style={[styles.addLightButton, { backgroundColor: colors.secondary }]}
-                  onPress={addLight}
-                >
-                  <Ionicons name="add" size={16} color="#FFFFFF" />
-                  <Text style={styles.addLightText}>Agregar Foco</Text>
-                </TouchableOpacity>
-              </View>
-
-              {lights.map((light, index) => (
-                <View
-                  key={light.id}
-                  style={[styles.lightConfig, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                >
-                  <View style={styles.lightConfigHeader}>
-                    <Text style={[styles.lightConfigTitle, { color: colors.text }]}>Foco {index + 1}</Text>
-                    <TouchableOpacity
-                      style={[styles.removeLightButton, { backgroundColor: colors.error }]}
-                      onPress={() => removeLight(light.id)}
-                    >
-                      <Ionicons name="trash-outline" size={14} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.lightConfigRow}>
-                    <View style={[styles.lightConfigInput, { flex: 2 }]}>
-                      <Text style={[styles.lightConfigLabel, { color: colors.textSecondary }]}>Nombre</Text>
-                      <TextInput
-                        style={[
-                          styles.lightInput,
-                          { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
-                        ]}
-                        value={light.name}
-                        onChangeText={(text) => updateLightData(light.id, { name: text })}
-                        placeholder="Nombre del foco"
-                        placeholderTextColor={colors.textTertiary}
-                      />
-                    </View>
-
-                    <View style={[styles.lightConfigInput, { flex: 1 }]}>
-                      <Text style={[styles.lightConfigLabel, { color: colors.textSecondary }]}>IP</Text>
-                      <TextInput
-                        style={[
-                          styles.lightInput,
-                          { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
-                        ]}
-                        value={light.ip}
-                        onChangeText={(text) => updateLightData(light.id, { ip: text })}
-                        placeholder="192.168.1.100"
-                        placeholderTextColor={colors.textTertiary}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.lightConfigRow}>
-                    <View style={styles.lightConfigInput}>
-                      <Text style={[styles.lightConfigLabel, { color: colors.textSecondary }]}>Posición X</Text>
-                      <TextInput
-                        style={[
-                          styles.lightInput,
-                          { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
-                        ]}
-                        value={light.position.x.toString()}
-                        onChangeText={(text) =>
-                          updateLightData(light.id, {
-                            position: { ...light.position, x: Number.parseFloat(text) || 1 },
-                          })
-                        }
-                        placeholder="1"
-                        placeholderTextColor={colors.textTertiary}
-                        keyboardType="numeric"
-                      />
-                    </View>
-
-                    <View style={styles.lightConfigInput}>
-                      <Text style={[styles.lightConfigLabel, { color: colors.textSecondary }]}>Posición Y</Text>
-                      <TextInput
-                        style={[
-                          styles.lightInput,
-                          { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
-                        ]}
-                        value={light.position.y.toString()}
-                        onChangeText={(text) =>
-                          updateLightData(light.id, {
-                            position: { ...light.position, y: Number.parseFloat(text) || 1 },
-                          })
-                        }
-                        placeholder="1"
-                        placeholderTextColor={colors.textTertiary}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                  </View>
-                </View>
-              ))}
-
-              {lights.length === 0 && (
-                <View style={styles.noLightsState}>
-                  <Ionicons name="bulb-outline" size={32} color={colors.textTertiary} />
-                  <Text style={[styles.noLightsText, { color: colors.textSecondary }]}>No hay focos configurados</Text>
-                  <Text style={[styles.noLightsSubtext, { color: colors.textTertiary }]}>
-                    Agrega focos para controlar la iluminación
-                  </Text>
-                </View>
-              )}
-            </View>
-          </ScrollView>
-
-          {/* Modal Footer */}
-          <View style={[styles.modalFooter, { borderTopColor: colors.border }]}>
-            <AnimatedButton
-              title="Cancelar"
-              onPress={closeModal}
-              variant="outline"
-              style={{ flex: 1, marginRight: SIZES.sm }}
-            />
-            <AnimatedButton
-              title={editingLab ? "Actualizar" : "Crear"}
-              onPress={handleSave}
-              style={{ flex: 1, marginLeft: SIZES.sm }}
-            />
-          </View>
-        </View>
-      </Modal>
-    </Animated.View>
+    </View>
   )
 }
 
-const styles = StyleSheet.create({ 
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -805,7 +723,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flexDirection: "row" as const,
-    alignItems: "flex-start" as const,
+    alignItems: "center" as const,
     marginBottom: SIZES.md,
   },
   logo: {

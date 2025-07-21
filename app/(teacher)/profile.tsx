@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Alert, Switch, Animated, StyleSheet } from "react-native"
+import { useState } from "react"
+import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Alert, Switch, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "../../context/AuthContext"
 import { useTheme } from "../../context/ThemeContext"
@@ -12,7 +12,7 @@ import { router } from "expo-router"
 
 export default function TeacherProfileScreen() {
   const { user, logout } = useAuth()
-  const { colors, isDark, toggleTheme } = useTheme()
+  const { colors} = useTheme()
   const { labs } = useLab()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
@@ -21,28 +21,11 @@ export default function TeacherProfileScreen() {
     secondLastName: user?.secondLastName || "",
     email: user?.email || "",
     phone: user?.phone || "",
+    photo: user?.photo || "", // Assuming user.photo is a URL or local path
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   })
-
-  const fadeAnim = new Animated.Value(0)
-  const slideAnim = new Animated.Value(30)
-
-  React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-    ]).start()
-  }, [])
 
   const userLabs = labs.filter((lab) => user?.assignedLabs?.includes(lab.id))
 
@@ -61,7 +44,7 @@ export default function TeacherProfileScreen() {
   }
 
   const handleLogout = () => {
-     Alert.alert("Cerrar Sesión", "¿Estás seguro de que deseas cerrar sesión?", [
+    Alert.alert("Cerrar Sesión", "¿Estás seguro de que deseas cerrar sesión?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Cerrar Sesión",
@@ -74,52 +57,31 @@ export default function TeacherProfileScreen() {
   }
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primaryDark }]}>
         <View style={styles.headerText}>
           <Text style={styles.headerespacio}></Text>
-            <Text style={styles.headerTitle}>Mi Perfil</Text>
-            <Text style={styles.headerSubtitle}>Docente</Text>
+          <Text style={styles.headerTitle}>Mi Perfil</Text>
+          <Text style={styles.headerSubtitle}>Docente</Text>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Photo Section */}
-        <Animated.View
-          style={[
-            styles.photoSection,
-            { backgroundColor: colors.surface },
-            SHADOWS.small,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <View style={[styles.photoSection, { backgroundColor: colors.surface }, SHADOWS.small]}>
           <View style={styles.photoContainer}>
-            <Image
-              source={require("../../assets/images/galla2.jpg")}
-              style={styles.profilePhoto}
-            />
+            <Image source={user?.photo} style={styles.profilePhoto} />
             <TouchableOpacity style={[styles.photoEditButton, { backgroundColor: colors.primary }]}>
               <Ionicons name="camera" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
           <Text style={[styles.userName, { color: colors.text }]}>{user?.name}</Text>
           <Text style={[styles.userDepartment, { color: colors.textSecondary }]}>{user?.department}</Text>
-        </Animated.View>
+        </View>
 
         {/* Quick Stats */}
-        <Animated.View
-          style={[
-            styles.statsSection,
-            { backgroundColor: colors.surface },
-            SHADOWS.small,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <View style={[styles.statsSection, { backgroundColor: colors.surface }, SHADOWS.small]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Resumen</Text>
 
           <View style={styles.statsGrid}>
@@ -151,25 +113,13 @@ export default function TeacherProfileScreen() {
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Focos</Text>
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* Personal Information */}
-        <Animated.View
-          style={[
-            styles.section,
-            { backgroundColor: colors.surface },
-            SHADOWS.small,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <View style={[styles.section, { backgroundColor: colors.surface }, SHADOWS.small]}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Información Personal</Text>
-            <TouchableOpacity
-              style={[styles.editButton, { backgroundColor: isEditing ? colors.success : colors.primary }]}
-              onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
-            >
+            <TouchableOpacity>
               <Ionicons name={isEditing ? "checkmark" : "create-outline"} size={16} color="#FFFFFF" />
               <Text style={styles.editButtonText}>{isEditing ? "Guardar" : "Editar"}</Text>
             </TouchableOpacity>
@@ -269,20 +219,11 @@ export default function TeacherProfileScreen() {
               )}
             </View>
           </View>
-        </Animated.View>
+        </View>
 
-        {/* Password Section */}
+        {/* Password Section 
         {isEditing && (
-          <Animated.View
-            style={[
-              styles.section,
-              { backgroundColor: colors.surface },
-              SHADOWS.small,
-              {
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
+          <View style={[styles.section, { backgroundColor: colors.surface }, SHADOWS.small]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Cambiar Contraseña</Text>
             <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
               Deja en blanco si no deseas cambiar la contraseña
@@ -332,20 +273,11 @@ export default function TeacherProfileScreen() {
                 secureTextEntry
               />
             </View>
-          </Animated.View>
-        )}
+          </View>
+        )}*/}
 
         {/* Assigned Labs */}
-        <Animated.View
-          style={[
-            styles.section,
-            { backgroundColor: colors.surface },
-            SHADOWS.small,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <View style={[styles.section, { backgroundColor: colors.surface }, SHADOWS.small]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Laboratorios Asignados</Text>
 
           {userLabs.map((lab) => (
@@ -385,38 +317,11 @@ export default function TeacherProfileScreen() {
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No tienes laboratorios asignados</Text>
             </View>
           )}
-        </Animated.View>
+        </View>
 
         {/* Settings Section */}
-        <Animated.View
-          style={[
-            styles.section,
-            { backgroundColor: colors.surface },
-            SHADOWS.small,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <View style={[styles.section, { backgroundColor: colors.surface }, SHADOWS.small]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Configuraciones</Text>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Ionicons name={isDark ? "moon" : "sunny"} size={24} color={colors.text} />
-              <View style={styles.settingText}>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Modo Oscuro</Text>
-                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
-                  Cambia la apariencia de la aplicación
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={isDark ? "#FFFFFF" : colors.textSecondary}
-            />
-          </View>
 
           <View style={styles.settingItem}>
             <View style={styles.settingInfo}>
@@ -430,19 +335,10 @@ export default function TeacherProfileScreen() {
             </View>
             <Switch value={true} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#FFFFFF" />
           </View>
-        </Animated.View>
+        </View>
 
         {/* App Information */}
-        <Animated.View
-          style={[
-            styles.section,
-            { backgroundColor: colors.surface },
-            SHADOWS.small,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <View style={[styles.section, { backgroundColor: colors.surface }, SHADOWS.small]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Información de la App</Text>
 
           <View style={styles.infoGrid}>
@@ -461,31 +357,23 @@ export default function TeacherProfileScreen() {
               <Text style={[styles.infoValue, { color: colors.text }]}>Hoy, 14:30</Text>
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* Logout Button */}
-        <Animated.View
-          style={[
-            styles.logoutSection,
-            {
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
-        >
+        <View style={styles.logoutSection}>
           <AnimatedButton
             title="Cerrar Sesión"
             onPress={handleLogout}
             variant="outline"
-            style={{ ...styles.logoutButton, borderColor: colors.error }}
             textStyle={{ color: colors.error }}
           />
-        </Animated.View>
+        </View>
       </ScrollView>
-    </Animated.View>
+    </View>
   )
 }
 
-const styles = StyleSheet.create({ 
+const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -507,7 +395,6 @@ const styles = StyleSheet.create({
   headerText: {
     marginLeft: SIZES.md,
     alignItems: "center" as const,
-    
   },
   headerTitle: {
     color: "#FFFFFF",

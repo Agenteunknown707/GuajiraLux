@@ -1,11 +1,11 @@
 "use client"
 
 import React, { useState } from "react"
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Image, Alert, Animated, StyleSheet } from "react-native"
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Image, Alert, Animated } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../context/ThemeContext"
 import { useLab } from "../../context/LabContext"
-import { MOCK_USERS, DEPARTMENTS } from "../../constants/Data"
+import { MOCK_USERS } from "../../constants/Data"
 import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
 import { AnimatedButton } from "../../components/AnimatedButton"
 
@@ -18,8 +18,6 @@ interface Teacher {
   password: string
   assignedLabs: string[]
   photo: string
-  phone: string 
-  department: string
 }
 
 export default function TeachersScreen() {
@@ -34,9 +32,7 @@ export default function TeachersScreen() {
       email: u.email,
       password: u.password,
       assignedLabs: u.assignedLabs || [],
-      photo: u.photo || "/placeholder.svg?height=100&width=100",
-      phone: u.phone || "",
-      department: u.department || "",
+      photo: u.photo || "",
     })),
   )
 
@@ -46,7 +42,6 @@ export default function TeachersScreen() {
   const [selectedLabs, setSelectedLabs] = useState<string[]>([])
 
   const fadeAnim = new Animated.Value(0)
-
   React.useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -55,7 +50,7 @@ export default function TeachersScreen() {
     }).start()
   }, [])
 
-  const openModal = (teacher?: Teacher) => {
+  const openModal = (teacher?: Teacher)=> {
     if (teacher) {
       setEditingTeacher(teacher)
       setFormData(teacher)
@@ -68,9 +63,7 @@ export default function TeachersScreen() {
         secondLastName: "",
         email: "",
         password: "",
-        phone: "",
-        department: DEPARTMENTS[0],
-        photo: "/placeholder.svg?height=100&width=100",
+        photo: "",
       })
       setSelectedLabs([])
     }
@@ -79,9 +72,12 @@ export default function TeachersScreen() {
 
   const closeModal = () => {
     setShowModal(false)
-    setEditingTeacher(null)
-    setFormData({})
-    setSelectedLabs([])
+    // Limpiar estados después de un pequeño delay para evitar pantalla en blanco
+    setTimeout(() => {
+      setEditingTeacher(null)
+      setFormData({})
+      setSelectedLabs([])
+    }, 100)
   }
 
   const handleSave = () => {
@@ -98,9 +94,7 @@ export default function TeachersScreen() {
       email: formData.email!,
       password: formData.password || "123456",
       assignedLabs: selectedLabs,
-      photo: formData.photo || "/placeholder.svg?height=100&width=100",
-      phone: formData.phone || "",
-      department: formData.department || DEPARTMENTS[0],
+      photo: formData.photo || "", 
     }
 
     if (editingTeacher) {
@@ -132,7 +126,7 @@ export default function TeachersScreen() {
   }
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <View style={styles.headerContent}>
@@ -142,7 +136,7 @@ export default function TeachersScreen() {
               {teachers.length} docente{teachers.length !== 1 ? "s" : ""} registrado{teachers.length !== 1 ? "s" : ""}
             </Text>
           </View>
-            <TouchableOpacity style={styles.addButton} onPress={() => openModal()}>
+        <TouchableOpacity style={styles.addButton} onPress={() => openModal()}>
           <Ionicons name="add" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         </View>
@@ -151,24 +145,9 @@ export default function TeachersScreen() {
       {/* Teachers List */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {teachers.map((teacher, index) => (
-          <Animated.View
+          <View
             key={teacher.id}
-            style={[
-              styles.teacherCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              SHADOWS.small,
-              {
-                opacity: fadeAnim,
-                transform: [
-                  {
-                    translateY: fadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [50, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
+            style={[styles.teacherCard, { backgroundColor: colors.surface, borderColor: colors.border }, SHADOWS.small]}
           >
             <View style={styles.teacherHeader}>
               <Image source={teacher.photo} style={styles.teacherPhoto} />
@@ -177,7 +156,6 @@ export default function TeachersScreen() {
                   {teacher.firstName} {teacher.lastName} {teacher.secondLastName}
                 </Text>
                 <Text style={[styles.teacherEmail, { color: colors.textSecondary }]}>{teacher.email}</Text>
-                <Text style={[styles.teacherDepartment, { color: colors.textSecondary }]}>{teacher.department}</Text>
               </View>
               <View style={styles.teacherActions}>
                 <TouchableOpacity
@@ -196,12 +174,6 @@ export default function TeachersScreen() {
             </View>
 
             <View style={styles.teacherDetails}>
-              <View style={styles.detailRow}>
-                <Ionicons name="call-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.detailText, { color: colors.textSecondary }]}>
-                  {teacher.phone || "No especificado"}
-                </Text>
-              </View>
               <View style={styles.detailRow}>
                 <Ionicons name="business-outline" size={16} color={colors.textSecondary} />
                 <Text style={[styles.detailText, { color: colors.textSecondary }]}>
@@ -226,7 +198,7 @@ export default function TeachersScreen() {
                 </View>
               </View>
             )}
-          </Animated.View>
+          </View>
         ))}
 
         {teachers.length === 0 && (
@@ -243,7 +215,13 @@ export default function TeachersScreen() {
       </ScrollView>
 
       {/* Modal */}
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeModal}
+        statusBarTranslucent={false}
+      >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={closeModal}>
@@ -255,11 +233,11 @@ export default function TeachersScreen() {
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView style={styles.modalContent}>
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* Photo */}
             <View style={styles.photoSection}>
               <Image
-                source={{ uri: formData.photo || "/placeholder.svg?height=100&width=100" }}
+                source={formData.photo}
                 style={styles.modalPhoto}
               />
               <TouchableOpacity style={[styles.photoButton, { backgroundColor: colors.primary }]}>
@@ -344,50 +322,6 @@ export default function TeachersScreen() {
                   secureTextEntry
                 />
               </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Teléfono</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-                  ]}
-                  value={formData.phone}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, phone: text }))}
-                  placeholder="+57 300 123 4567"
-                  placeholderTextColor={colors.textTertiary}
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Departamento</Text>
-                <View style={[styles.pickerContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {DEPARTMENTS.map((dept) => (
-                      <TouchableOpacity
-                        key={dept}
-                        style={[
-                          styles.pickerOption,
-                          {
-                            backgroundColor: formData.department === dept ? colors.primary : "transparent",
-                          },
-                        ]}
-                        onPress={() => setFormData((prev) => ({ ...prev, department: dept }))}
-                      >
-                        <Text
-                          style={[
-                            styles.pickerOptionText,
-                            { color: formData.department === dept ? "#FFFFFF" : colors.text },
-                          ]}
-                        >
-                          {dept}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
             </View>
 
             {/* Lab Assignment */}
@@ -455,11 +389,11 @@ export default function TeachersScreen() {
           </View>
         </View>
       </Modal>
-    </Animated.View>
+    </View>
   )
 }
 
-const styles = StyleSheet.create ({
+const styles = {
   container: {
     flex: 1,
   },
@@ -472,6 +406,11 @@ const styles = StyleSheet.create ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     marginBottom: SIZES.md,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    marginRight: SIZES.md,
   },
   headerText: {
     flex: 1,
@@ -700,4 +639,4 @@ const styles = StyleSheet.create ({
     padding: SIZES.lg,
     borderTopWidth: 1,
   },
-})
+}

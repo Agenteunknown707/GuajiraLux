@@ -97,7 +97,7 @@ export default function LoginScreen() {
     formTranslateY.value = withSequence(withTiming(-5, { duration: 100 }), withTiming(0, { duration: 100 }))
 
     if (role === "teacher") {
-      setEmail("carlos.mendoza@uniguajira.edu.co")
+      setEmail("galilea.serrano@uniguajira.edu.co")
       setPassword("123456")
     } else {
       setEmail("admin@uniguajira.edu.co")
@@ -141,13 +141,6 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
-          <Animated.View style={[styles.header, headerAnimatedStyle]}>
-            <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-              <Ionicons name={isDark ? "sunny" : "moon"} size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </Animated.View>
-
           {/* Logo y título */}
           <Animated.View style={[styles.logoSection, logoAnimatedStyle]}>
             <View style={styles.logoContainer}>

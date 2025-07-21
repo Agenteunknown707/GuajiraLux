@@ -37,7 +37,6 @@ export default function PracticesScreen() {
   const [editingPractice, setEditingPractice] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
     labId: "",
   })
   const [practiceLights, setPracticeLights] = useState<PracticeLight[]>([])
@@ -70,7 +69,6 @@ export default function PracticesScreen() {
       setEditingPractice(practiceToEdit.id)
       setFormData({
         name: practiceToEdit.name,
-        description: practiceToEdit.description,
         labId: practiceToEdit.labId,
       })
 
@@ -101,7 +99,6 @@ export default function PracticesScreen() {
 
       setFormData({
         name: "",
-        description: "",
         labId: activeLab!.id,
       })
       setPracticeLights(lights)
@@ -115,7 +112,6 @@ export default function PracticesScreen() {
     setEditingPractice(null)
     setFormData({
       name: "",
-      description: "",
       labId: "",
     })
     setPracticeLights([])
@@ -138,7 +134,6 @@ export default function PracticesScreen() {
 
     const practiceData = {
       name: formData.name,
-      description: formData.description,
       labId: formData.labId,
       lights: practiceLights.map((light) => ({
         lightId: light.lightId,
@@ -485,23 +480,6 @@ export default function PracticesScreen() {
                   onChangeText={(text) => setFormData((prev) => ({ ...prev, name: text }))}
                   placeholder="Ej: Análisis de Espectros Avanzado"
                   placeholderTextColor={colors.textTertiary}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Descripción</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.textArea,
-                    { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-                  ]}
-                  value={formData.description}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, description: text }))}
-                  placeholder="Describe el propósito y procedimiento de esta práctica..."
-                  placeholderTextColor={colors.textTertiary}
-                  multiline
-                  numberOfLines={4}
                 />
               </View>
 

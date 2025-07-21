@@ -11,8 +11,6 @@ export const MOCK_USERS = [
     role: "teacher",
     assignedLabs: ["lab1", "lab2"],
     photo: require('../assets/images/galla2.jpg'),
-    phone: "+57 300 123 4567",
-    department: "Física",
   },
   {
     id: "2",
@@ -24,8 +22,6 @@ export const MOCK_USERS = [
     name: "Ing. Carlos Rosales Sanchez",
     role: "admin",
     photo: "/placeholder.svg?height=100&width=100",
-    phone: "+57 300 987 6543",
-    department: "Administración",
   },
   {
     id: "3",
@@ -38,8 +34,6 @@ export const MOCK_USERS = [
     role: "teacher",
     assignedLabs: ["lab3"],
     photo: require('../assets/images/gaelformal.jpg'),
-    phone: "+57 300 555 1234",
-    department: "Biología",
   },
   {
     id: "4",
@@ -52,8 +46,7 @@ export const MOCK_USERS = [
     role: "teacher",
     assignedLabs: ["lab1", "lab3"],
     photo: require('../assets/images/jocelinfoto.jpg'),
-    phone: "+57 300 777 8888",
-    department: "Química",
+  
   },
 ]
 
@@ -62,9 +55,6 @@ export const MOCK_LABS = [
     id: "lab1",
     name: "Laboratorio de Física Eléctrica y de Ondas",
     description: "Laboratorio equipado para prácticas de mecánica y termodinámica",
-    building: "Bloque A",
-    floor: "2do Piso",
-    room: "A-201",
     capacity: 30,
     isActive: false,
     activeTeacher: null,
@@ -72,7 +62,6 @@ export const MOCK_LABS = [
       {
         id: "eb60007e1dd10c2a94ylj6",
         name: "Foco Mesa 1",
-        ip: "192.168.1.101",
         position: { x: 1, y: 1 },
         isOn: false,
         color: "#FFFFFF",
@@ -81,7 +70,6 @@ export const MOCK_LABS = [
       {
         id: "ebea478e587ff3b4e3xphk",
         name: "Foco Mesa 2",
-        ip: "192.168.1.102",
         position: { x: 1, y: 2 },
         isOn: false,
         color: "#FFFFFF",
@@ -90,7 +78,6 @@ export const MOCK_LABS = [
       {
         id: "ebb9f6ba0f123c65bftm38",
         name: "Foco Mesa 3",
-        ip: "192.168.1.103",
         position: { x: 2, y: 1 },
         isOn: false,
         color: "#FFFFFF",
@@ -99,7 +86,6 @@ export const MOCK_LABS = [
       {
         id: "ebce9bd65682fdb7c4qlmf",
         name: "Foco Mesa 4",
-        ip: "192.168.1.104",
         position: { x: 2, y: 2 },
         isOn: false,
         color: "#FFFFFF",
@@ -111,9 +97,6 @@ export const MOCK_LABS = [
     id: "lab2",
     name: "Laboratorio de  Óptica",
     description: "Laboratorio especializado en síntesis y análisis orgánico",
-    building: "Bloque B",
-    floor: "1er Piso",
-    room: "B-105",
     capacity: 25,
     isActive: false,
     activeTeacher: null,
@@ -121,7 +104,6 @@ export const MOCK_LABS = [
       {
         id: "light6",
         name: "Foco Campana 1",
-        ip: "192.168.1.201",
         position: { x: 1, y: 1 },
         isOn: false,
         color: "#FFFFFF",
@@ -130,7 +112,6 @@ export const MOCK_LABS = [
       {
         id: "light7",
         name: "Foco Campana 2",
-        ip: "192.168.1.202",
         position: { x: 2, y: 1 },
         isOn: false,
         color: "#FFFFFF",
@@ -139,7 +120,6 @@ export const MOCK_LABS = [
       {
         id: "light8",
         name: "Foco Central",
-        ip: "192.168.1.203",
         position: { x: 1.5, y: 2 },
         isOn: false,
         color: "#FFFFFF",
@@ -151,9 +131,6 @@ export const MOCK_LABS = [
     id: "lab3",
     name: "Laboratorio de Física Mecánica",
     description: "Laboratorio para análisis genético y biología celular",
-    building: "Bloque C",
-    floor: "3er Piso",
-    room: "C-301",
     capacity: 20,
     isActive: false,
     activeTeacher: null,
@@ -161,7 +138,6 @@ export const MOCK_LABS = [
       {
         id: "light9",
         name: "Foco Microscopios",
-        ip: "192.168.1.301",
         position: { x: 1, y: 1 },
         isOn: false,
         color: "#FFFFFF",
@@ -170,7 +146,6 @@ export const MOCK_LABS = [
       {
         id: "light10",
         name: "Foco Preparación",
-        ip: "192.168.1.302",
         position: { x: 2, y: 1 },
         isOn: false,
         color: "#FFFFFF",
@@ -179,7 +154,6 @@ export const MOCK_LABS = [
       {
         id: "light11",
         name: "Foco Incubadora",
-        ip: "192.168.1.303",
         position: { x: 1.5, y: 2 },
         isOn: false,
         color: "#FFFFFF",
@@ -193,7 +167,6 @@ export const MOCK_PRACTICES = [
   {
     id: "practice1",
     name: "Espectroscopia Básica",
-    description: "Análisis de espectros de absorción y emisión",
     labId: "lab1",
     lights: [
       { lightId: "light1", isOn: true, color: "#FF0000", intensity: 80 },
@@ -207,7 +180,6 @@ export const MOCK_PRACTICES = [
   {
     id: "practice2",
     name: "Fotosíntesis",
-    description: "Estudio de procesos fotosintéticos con luz verde",
     labId: "lab3",
     lights: [
       { lightId: "light9", isOn: true, color: "#00FF00", intensity: 60 },
@@ -219,8 +191,6 @@ export const MOCK_PRACTICES = [
   {
     id: "practice3",
     name: "Análisis Químico",
-    description: "Identificación de compuestos con luz azul",
-    labId: "lab2",
     lights: [
       { lightId: "light6", isOn: true, color: "#0000FF", intensity: 90 },
       { lightId: "light7", isOn: true, color: "#0000FF", intensity: 90 },
@@ -245,12 +215,3 @@ export const RGB_COLORS = [
   { name: "Turquesa", value: "#40E0D0" },
 ]
 
-export const BUILDINGS = [
-  { id: "A", name: "Bloque A - Ciencias Básicas" },
-  { id: "B", name: "Bloque B - Química" },
-  { id: "C", name: "Bloque C - Biología" },
-  { id: "D", name: "Bloque D - Física" },
-  { id: "E", name: "Bloque E - Ingeniería" },
-]
-
-export const DEPARTMENTS = ["Física", "Química", "Biología", "Matemáticas", "Ingeniería", "Administración"]

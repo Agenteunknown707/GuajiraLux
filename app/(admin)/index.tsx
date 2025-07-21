@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, Animated } from "react-native"
+import { useState } from "react"
+import { View, Text, ScrollView, TouchableOpacity, Dimensions,StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTheme } from "../../context/ThemeContext"
 import { useLab } from "../../context/LabContext"
@@ -13,16 +13,6 @@ export default function AnalyticsScreen() {
   const { colors } = useTheme()
   const { labs, getEnergyConsumption } = useLab()
   const [selectedPeriod, setSelectedPeriod] = useState("today")
-
-  const fadeAnim = new Animated.Value(0)
-
-  React.useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start()
-  }, [])
 
   const periods = [
     { key: "today", label: "Hoy" },
@@ -76,7 +66,7 @@ export default function AnalyticsScreen() {
     .sort((a, b) => b.consumption - a.consumption)
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: colors.background, opacity: fadeAnim }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Text style={styles.headerTitle}>Analíticas de Consumo</Text>
@@ -115,7 +105,7 @@ export default function AnalyticsScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Resumen General</Text>
 
           <View style={styles.summaryGrid}>
-            <Animated.View
+            <View
               style={[
                 styles.summaryCard,
                 { backgroundColor: colors.surface, borderColor: colors.primary },
@@ -128,9 +118,9 @@ export default function AnalyticsScreen() {
               <Text style={[styles.summaryNumber, { color: colors.text }]}>{totalConsumption.toFixed(1)}W</Text>
               <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Consumo Total</Text>
               <Text style={[styles.summaryChange, { color: colors.success }]}>↑ 12% vs ayer</Text>
-            </Animated.View>
+            </View>
 
-            <Animated.View
+            <View
               style={[
                 styles.summaryCard,
                 { backgroundColor: colors.surface, borderColor: colors.success },
@@ -143,9 +133,9 @@ export default function AnalyticsScreen() {
               <Text style={[styles.summaryNumber, { color: colors.text }]}>{activeLabs.length}</Text>
               <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Labs Activos</Text>
               <Text style={[styles.summaryChange, { color: colors.info }]}>de {labs.length} total</Text>
-            </Animated.View>
+            </View>
 
-            <Animated.View
+            <View
               style={[
                 styles.summaryCard,
                 { backgroundColor: colors.surface, borderColor: colors.secondary },
@@ -162,9 +152,9 @@ export default function AnalyticsScreen() {
               <Text style={[styles.summaryChange, { color: colors.warning }]}>
                 {((activeLights / totalLights) * 100).toFixed(0)}% uso
               </Text>
-            </Animated.View>
+            </View>
 
-            <Animated.View
+            <View
               style={[
                 styles.summaryCard,
                 { backgroundColor: colors.surface, borderColor: colors.accent },
@@ -179,7 +169,7 @@ export default function AnalyticsScreen() {
               </Text>
               <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Eficiencia</Text>
               <Text style={[styles.summaryChange, { color: colors.success }]}>↑ 5% vs promedio</Text>
-            </Animated.View>
+            </View>
           </View>
         </View>
 
@@ -240,23 +230,9 @@ export default function AnalyticsScreen() {
           </Text>
 
           {labConsumptionData.map((lab, index) => (
-            <Animated.View
+            <View
               key={lab.id}
-              style={[
-                styles.rankingCard,
-                { backgroundColor: colors.background, borderColor: colors.border },
-                {
-                  opacity: fadeAnim,
-                  transform: [
-                    {
-                      translateX: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [50, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
+              style={[styles.rankingCard, { backgroundColor: colors.background, borderColor: colors.border }]}
             >
               <View style={styles.rankingHeader}>
                 <View style={styles.rankingPosition}>
@@ -304,7 +280,7 @@ export default function AnalyticsScreen() {
                   ]}
                 />
               </View>
-            </Animated.View>
+            </View>
           ))}
         </View>
 
@@ -354,16 +330,16 @@ export default function AnalyticsScreen() {
           </View>
         </View>
       </ScrollView>
-    </Animated.View>
+    </View>
   )
 }
 
-const styles = {
+const styles = StyleSheet.create( {
   container: {
     flex: 1,
   },
   header: {
-    paddingTop: 70,
+    paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: SIZES.lg,
     alignItems: "center" as const,
@@ -570,7 +546,7 @@ const styles = {
     overflow: "hidden" as const,
   },
   progressFill: {
-    height: 4,
+    height: "100%",
     borderRadius: 2,
   },
   recommendationsSection: {
@@ -605,4 +581,4 @@ const styles = {
     fontSize: FONTS.size.sm,
     lineHeight: 18,
   },
-}
+})
