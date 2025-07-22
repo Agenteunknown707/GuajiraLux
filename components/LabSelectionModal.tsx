@@ -70,6 +70,13 @@ export const LabSelector = () => {
     setVisible(false)
     // Redirigir a la pantalla principal de teacher
     router.replace("/(teacher)")
+    await new Promise(resolve => setTimeout(resolve, 100))
+    console.log("Laboratorio seleccionado:", labId)
+    router.replace("/(teacher)/practices")
+    await new Promise(resolve => setTimeout(resolve, 100))
+    console.log("Laboratorio seleccionado:", labId)
+    router.replace("/(teacher)")
+    
   }
 
   const handleClose = () => {

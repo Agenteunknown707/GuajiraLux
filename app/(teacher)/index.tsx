@@ -119,11 +119,7 @@ export default function TeacherControlScreen() {
       setSelectedLabId(null);
       const getLabId = async () => {
         const storedLabId = await AsyncStorage.getItem("selectedLabId");
-        if (storedLabId) {
-          setSelectedLabId(storedLabId);
-        } else {
-          setSelectedLabId(null);
-        }
+        setSelectedLabId(storedLabId || null);
         setIsLoadingLabId(false);
       };
       getLabId();
@@ -441,13 +437,11 @@ export default function TeacherControlScreen() {
   }
 
   if (!selectedLabId) {
-    return (
-      <LabSelector />
-    )
+    return <LabSelector />
   }
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: colors.background }, containerAnimatedStyle]}>
+    <Animated.View key={selectedLabId} style={[styles.container, { backgroundColor: colors.background }, containerAnimatedStyle]}>
       {/* Header */}
       <Animated.View style={[styles.header, { backgroundColor: colors.primaryDark }, headerAnimatedStyle]}>
         <View style={styles.headerContent}>

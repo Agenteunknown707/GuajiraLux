@@ -1,10 +1,10 @@
 "use client"
 
-import { Tabs } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
-import { useTheme } from "../../context/ThemeContext"
-import { SIZES } from "../../constants/Colors"
+import { Tabs } from "expo-router"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { SIZES } from "../../constants/Colors"
+import { useTheme } from "../../context/ThemeContext"
 
 export default function TeacherLayout() {
   const { colors } = useTheme()
@@ -53,6 +53,12 @@ export default function TeacherLayout() {
         options={{
           title: "Perfil",
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="lab-control/[labId]"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

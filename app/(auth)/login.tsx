@@ -126,11 +126,11 @@ export default function LoginScreen() {
     formTranslateY.value = withSequence(withTiming(-5, { duration: 100 }), withTiming(0, { duration: 100 }))
 
     if (role === "teacher") {
-      setEmail("galilea.serrano@uniguajira.edu.co")
-      setPassword("123456")
+      setEmail("gael@example.com")
+      setPassword("123456789")
     } else {
-      setEmail("admin@uniguajira.edu.co")
-      setPassword("admin123")
+      setEmail("admin@ejemplo.com")
+      setPassword("123456789")
     }
   }
 
