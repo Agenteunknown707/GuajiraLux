@@ -129,8 +129,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      // Llamada al endpoint de logout
+      if (globalAuthToken) {
+        console.log('[LOGOUT] Haciendo DELETE a /api/logout con token:', globalAuthToken)
+        const response = await fetch('https://756077eced4b.ngrok-free.app/api/logout', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${globalAuthToken}`,
+            'Accept': 'application/json',
+            // 'User-Agent': 'Thunder Client (https://www.thunderclient.com)', // opcional, normalmente no necesario
+          },
+        })
+        const data = await response.json().catch(() => ({}))
+        console.log('[LOGOUT] Respuesta de /api/logout:', data)
+      } else {
+        console.warn('[LOGOUT] No hay token global para hacer logout en el backend')
+      }
       setUser(null)
       await AsyncStorage.removeItem("user")
+      await AsyncStorage.removeItem("selectedLabId")
     } catch (error) {
       console.error("Error during logout:", error)
     }

@@ -1,14 +1,14 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, Alert, Switch, StyleSheet } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { useAuth } from "../../context/AuthContext"
-import { useTheme } from "../../context/ThemeContext"
-import { useLab } from "../../context/LabContext"
-import { SIZES, FONTS, SHADOWS } from "../../constants/Colors"
-import { AnimatedButton } from "../../components/AnimatedButton"
 import { router } from "expo-router"
+import { useState } from "react"
+import { Alert, Image, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { AnimatedButton } from "../../components/AnimatedButton"
+import { FONTS, SHADOWS, SIZES } from "../../constants/Colors"
+import { useAuth } from "../../context/AuthContext"
+import { useLab } from "../../context/LabContext"
+import { useTheme } from "../../context/ThemeContext"
 
 export default function TeacherProfileScreen() {
   const { user, logout } = useAuth()
@@ -71,7 +71,10 @@ export default function TeacherProfileScreen() {
         {/* Profile Photo Section */}
         <View style={[styles.photoSection, { backgroundColor: colors.surface }, SHADOWS.small]}>
           <View style={styles.photoContainer}>
-            <Image source={user?.photo} style={styles.profilePhoto} />
+            <Image
+              source={user?.photo ? { uri: user.photo } : require("../../assets/images/logoUniGuajira.png")}
+              style={styles.profilePhoto}
+            />
             <TouchableOpacity style={[styles.photoEditButton, { backgroundColor: colors.primary }]}>
               <Ionicons name="camera" size={20} color="#FFFFFF" />
             </TouchableOpacity>

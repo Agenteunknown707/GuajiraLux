@@ -1,7 +1,8 @@
 "use client"
 
 import { Ionicons } from "@expo/vector-icons"
-import { router } from "expo-router"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { router, useRouter } from "expo-router"
 import React, { useEffect, useState } from "react"
 import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
@@ -23,6 +24,7 @@ export const LabSelector = () => {
   const [labs, setLabs] = useState<Lab[]>([])
   const [visible, setVisible] = useState(true) // visible por defecto para prueba
   const currentUserId = "123" // reemplaza con el ID real del usuario
+  const router = useRouter()
 
  useEffect(() => {
   const token = globalAuthToken
@@ -60,9 +62,14 @@ export const LabSelector = () => {
     console.log(`Bearer ${token}`)
 }, [])
 
-  const handleSelectLab = (labId: string) => {
+  const handleSelectLab = async (labId: string) => {
     console.log("Laboratorio seleccionado:", labId)
-    // Aquí puedes hacer navegación u otra lógica
+    // Guardar labId seleccionado
+    await AsyncStorage.setItem("selectedLabId", labId)
+    // Ocultar el modal
+    setVisible(false)
+    // Redirigir a la pantalla principal de teacher
+    router.replace("/(teacher)")
   }
 
   const handleClose = () => {

@@ -1,6 +1,7 @@
 "use client"
 
 import { Ionicons } from "@expo/vector-icons"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios"
 import { useEffect, useState } from "react"
 import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
@@ -93,11 +94,23 @@ export default function TeacherControlScreen() {
   const [globalIntensity, setGlobalIntensity] = useState(100)
   const [showLightColorPicker, setShowLightColorPicker] = useState<string | null>(null)
   const [focoNombresIds, setFocoNombresIds] = useState<{ nombre: string; device_id: string }[]>([])
+  const [isLoadingLabId, setIsLoadingLabId] = useState(true)
 
   // Shared values para animaciones
   const opacity = useSharedValue(0)
   const translateY = useSharedValue(50)
   const headerTranslateY = useSharedValue(-100)
+
+  useEffect(() => {
+    const getLabId = async () => {
+      const storedLabId = await AsyncStorage.getItem("selectedLabId")
+      if (storedLabId) {
+        setSelectedLabId(storedLabId)
+      }
+      setIsLoadingLabId(false)
+    }
+    getLabId()
+  }, [])
 
   // Filtrar laboratorios asignados al docente
   const assignedLabs = labs.filter((lab) => user?.assignedLabs?.includes(lab.id))
@@ -123,24 +136,30 @@ export default function TeacherControlScreen() {
   }, [selectedLabId, assignedLabs])
 
   useEffect(() => {
-    // Llamada al endpoint al iniciar el componente
+    if (isLoadingLabId || !selectedLabId) return;
     const fetchFocos = async () => {
       try {
         const response = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/focos-salon", {
-          id_salon: 1,
+          id_salon: selectedLabId,
         })
         if (response.data && response.data.status === "ok" && Array.isArray(response.data.focos)) {
-          const nombresIds = response.data.focos.map((foco: any) => ({
+          const focosProcesados = response.data.focos.map((foco: any) => ({
+            id: foco.id,
             nombre: foco.nombre,
+            h: foco.h,
+            s: foco.s,
+            v: foco.v,
             device_id: foco.device_id,
+            switch_led: foco.switch_led,
           }))
-          setFocoNombresIds(nombresIds)
-          console.log("Focos obtenidos:", nombresIds)
+          setFocoNombresIds(focosProcesados)
+          console.log("Focos obtenidos:", focosProcesados)
+          console.log("[FOCOS] Datos de los focos guardados en el estado focoNombresIds.")
 
           // Actualizar los light.id de todos los labs en el contexto global
           labs.forEach(lab => {
             const newLights = lab.lights.map(light => {
-              const match = nombresIds.find((f: { nombre: string; device_id: string }) => f.nombre === light.name)
+              const match = focosProcesados.find((f: { nombre: string; device_id: string }) => f.nombre === light.name)
               if (match) {
                 return { ...light, id: match.device_id }
               }
@@ -156,7 +175,7 @@ export default function TeacherControlScreen() {
       }
     }
     fetchFocos()
-  }, [])
+  }, [isLoadingLabId, selectedLabId, labs])
 
   const handleLabSelection = (labId: string) => {
     const success = activateLab(labId, user?.id || "")
@@ -393,6 +412,14 @@ export default function TeacherControlScreen() {
       ],
     }
   })
+
+  if (isLoadingLabId) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <Text style={{ color: colors.text }}>Cargando laboratorio...</Text>
+      </View>
+    )
+  }
 
   if (!selectedLabId) {
     return (
