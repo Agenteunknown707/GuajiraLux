@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import type React from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 import { MOCK_USERS } from "../constants/Data"
 
 interface User {
@@ -28,6 +28,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+// Variable global para el token
+export let globalAuthToken: string | null = null
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -52,11 +55,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; role?: 'teacher' | 'admin' }> => {
+  // Nueva función para login real
+  const loginApi = async (email: string, password: string): Promise<{ success: boolean; role?: 'teacher' | 'admin' }> => {
+    console.log('[LOGIN API] Enviando datos:', { correo: email, password })
     try {
-      // Simular autenticación con datos mock
-      const foundUser = MOCK_USERS.find((u) => u.email === email && u.password === password)
+      const response = await fetch('https://756077eced4b.ngrok-free.app/api/maestro/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ correo: email, password }),
+      })
+      const data = await response.json()
+      console.log('[LOGIN API] Respuesta recibida:', data)
+      if (data.message === 'Inicio de sesión exitoso' && data.usuario) {
+        // Guardar token globalmente
+        globalAuthToken = data.usuario.token
+        console.log('[LOGIN API] Token guardado globalmente:', globalAuthToken)
+        // Construir el objeto de usuario
+        const userSession: User = {
+          id: data.usuario.id.toString(),
+          email: data.usuario.correo,
+          name: data.usuario.nombre,
+          role: data.usuario.rol === 'maestro' ? 'teacher' : 'admin',
+        }
+        setUser(userSession)
+        await AsyncStorage.setItem('user', JSON.stringify(userSession))
+        return { success: true, role: userSession.role }
+      } else {
+        return { success: false }
+      }
+    } catch (error) {
+      console.error('[LOGIN API] Error durante login:', error)
+      return { success: false }
+    }
+  }
 
+  // Modificar login para usar loginApi
+  const login = async (email: string, password: string): Promise<{ success: boolean; role?: 'teacher' | 'admin' }> => {
+    // Puedes cambiar entre loginApi y el mock comentando/descomentando
+    // return loginMock(email, password)
+    return loginApi(email, password)
+  }
+
+  // // loginMock: función original para pruebas locales
+  const loginMock = async (email: string, password: string): Promise<{ success: boolean; role?: 'teacher' | 'admin' }> => {
+    try {
+      const foundUser = MOCK_USERS.find((u) => u.email === email && u.password === password)
       if (foundUser) {
         const userSession: User = {
           id: foundUser.id,
@@ -67,20 +112,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           firstName: foundUser.firstName,
           lastName: foundUser.lastName,
           secondLastName: foundUser.secondLastName,
-          phone: foundUser.phone,
-          department: foundUser.department,
+          phone: (foundUser as any).phone ? (foundUser as any).phone : null,
+          department: (foundUser as any).department ? (foundUser as any).department : null,
           photo: foundUser.photo,
         }
-
         setUser(userSession)
-        await AsyncStorage.setItem("user", JSON.stringify(userSession))
-        
-        // Return the user role to handle navigation in the login screen
+        await AsyncStorage.setItem('user', JSON.stringify(userSession))
         return { success: true, role: userSession.role }
       }
       return { success: false }
     } catch (error) {
-      console.error("Error during login:", error)
+      console.error('[LOGIN MOCK] Error durante login:', error)
       return { success: false }
     }
   }

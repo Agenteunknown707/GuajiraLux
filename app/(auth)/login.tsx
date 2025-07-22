@@ -1,33 +1,33 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import { LinearGradient } from 'expo-linear-gradient'
+import { useRouter } from "expo-router"
+import { useEffect, useState } from "react"
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StatusBar,
-  Image,
   StyleSheet,
-
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native"
-import { Ionicons, MaterialIcons } from "@expo/vector-icons"
-import { LinearGradient } from 'expo-linear-gradient'
-import { useAuth } from "../../context/AuthContext"
-import { useTheme } from "../../context/ThemeContext"
-import { COLORS } from "../../constants/Colors"
-import { useRouter } from "expo-router"
 import Animated, {
-  useSharedValue,
   useAnimatedStyle,
-  withTiming,
-  withSpring,
+  useSharedValue,
   withSequence,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated"
+import { COLORS } from "../../constants/Colors"
+import { globalAuthToken, useAuth } from "../../context/AuthContext"
+import { useTheme } from "../../context/ThemeContext"
+
 
 // Screen width can be used for responsive layouts if needed
 
@@ -71,21 +71,50 @@ export default function LoginScreen() {
     }
 
     setIsLoading(true)
-
+    console.log('[LOGIN] Intentando login con:', { email, password })
     try {
       const result = await login(email, password)
+      console.log('[LOGIN] Resultado de login:', result)
+      console.log('[LOGIN] globalAuthToken actual:', globalAuthToken)
       if (result.success) {
+        console.log('[LOGIN] Login exitoso, rol:', result.role)
+        // Hacer petición inmediata a salones con el token
+        if (globalAuthToken) {
+          console.log('[LOGIN] Haciendo fetch inmediato a /api/maestro/salones con token:', globalAuthToken)
+          fetch("https://756077eced4b.ngrok-free.app/api/maestro/salones", {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${globalAuthToken}`,
+              Accept: "application/json",
+            },
+          })
+            .then(res => {
+              if (!res.ok) throw new Error("Error al obtener laboratorios")
+              return res.json()
+            })
+            .then(data => {
+              console.log('[LOGIN] Respuesta de /api/maestro/salones:', data)
+            })
+            .catch(error => {
+              console.error('[LOGIN] Error al obtener salones:', error)
+            })
+        } else {
+          console.warn('[LOGIN] No hay token global para hacer fetch a salones')
+        }
         // Navegar a la pantalla correspondiente según el rol
         if (result.role === 'teacher') {
+          console.log('[LOGIN] Redirigiendo a /(teacher)')
           router.replace('/(teacher)')
         } else if (result.role === 'admin') {
+          console.log('[LOGIN] Redirigiendo a /(admin)')
           router.replace('/(admin)')
         }
       } else {
+        console.log('[LOGIN] Credenciales incorrectas')
         Alert.alert("Error", "Credenciales incorrectas. Por favor, inténtalo de nuevo.")
       }
     } catch (err) {
-      console.error('Login error:', err)
+      console.error('[LOGIN] Error en login:', err)
       Alert.alert("Error", "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo.")
     } finally {
       setIsLoading(false)

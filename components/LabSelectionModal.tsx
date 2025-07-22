@@ -1,22 +1,83 @@
 "use client"
 
 import { Ionicons } from "@expo/vector-icons"
-import type React from "react"
-import { useEffect } from "react"
-import { Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from "react-native"
+import { router } from "expo-router"
+import React, { useEffect, useState } from "react"
+import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 import { FONTS, SHADOWS, SIZES } from "../constants/Colors"
+import { globalAuthToken } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
 import { AnimatedButton } from "./AnimatedButton"
-import { router } from "expo-router"
 
 interface Lab {
   id: string
   name: string
-  building: string
-  room: string
   isActive: boolean
   activeTeacher: string | null
+}
+
+const { width, height } = Dimensions.get("window")
+
+export const LabSelector = () => {
+  const [labs, setLabs] = useState<Lab[]>([])
+  const [visible, setVisible] = useState(true) // visible por defecto para prueba
+  const currentUserId = "123" // reemplaza con el ID real del usuario
+
+ useEffect(() => {
+  const token = globalAuthToken
+  if (!token) {
+    console.warn('[LabSelector] No hay token global disponible, el usuario no está autenticado o el login falló.')
+  } else {
+    console.log('[LabSelector] Usando token global:', token)
+  }
+  fetch("https://756077eced4b.ngrok-free.app/api/maestro/salones", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  })
+  
+    .then(res => {
+      if (!res.ok) {
+        throw new Error("Error al obtener laboratorios")
+      }
+      return res.json()
+    })
+    .then(data => {
+      // Aquí transformas los datos
+      setLabs(
+        data.laboratorios.map((lab: any) => ({
+          id: lab.id.toString(),
+          name: lab.nombre,
+          isActive: !lab.disponible,
+          activeTeacher: lab.ocupado_por,
+        }))
+      )
+    })
+    .catch(error => console.error("Error:", error))
+    console.log(`Bearer ${token}`)
+}, [])
+
+  const handleSelectLab = (labId: string) => {
+    console.log("Laboratorio seleccionado:", labId)
+    // Aquí puedes hacer navegación u otra lógica
+  }
+
+  const handleClose = () => {
+    setVisible(false)
+  }
+
+  return (
+    <LabSelectionModal
+      visible={visible}
+      labs={labs}
+      onSelectLab={handleSelectLab}
+      onClose={handleClose}
+      currentUserId={currentUserId}
+    />
+  )
 }
 
 interface LabSelectionModalProps {
@@ -27,9 +88,7 @@ interface LabSelectionModalProps {
   currentUserId: string
 }
 
-const { width, height } = Dimensions.get("window")
-
-export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
+const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
   visible,
   labs,
   onSelectLab,
@@ -37,7 +96,6 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
   currentUserId,
 }) => {
   const { colors } = useTheme()
-
   const translateY = useSharedValue(height)
   const opacity = useSharedValue(0)
 
@@ -57,31 +115,20 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
     return { status: "occupied", color: colors.warning, text: "Ocupado" }
   }
 
-  const overlayAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-    }
-  })
+  const overlayAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }))
 
-  const modalAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateY: translateY.value }],
-    }
-  })
+  const modalAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }))
 
-  const labCardAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-      transform: [
-        {
-          translateX: interpolate(opacity.value, [0, 1], [50, 0]),
-        },
-      ],
-    }
-  })
+  const labCardAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateX: interpolate(opacity.value, [0, 1], [50, 0]) }],
+  }))
 
   const handleLogout = () => {
-      
     router.replace("/(auth)/login")
     Alert.alert("Sesión cerrada", "Has cerrado sesión correctamente.")
     onClose()
@@ -109,9 +156,9 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Labs List */}
+          {/* Lista de labs */}
           <ScrollView style={styles.labsList} showsVerticalScrollIndicator={false}>
-            {labs.map((lab, index) => {
+            {labs.map((lab) => {
               const labStatus = getLabStatus(lab)
               const isSelectable = labStatus.status !== "occupied"
 
@@ -135,7 +182,6 @@ export const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
                       <View style={styles.labInfo}>
                         <Text style={[styles.labName, { color: colors.text }]}>{lab.name}</Text>
                         <Text style={[styles.labLocation, { color: colors.textSecondary }]}>
-                          {lab.building} - {lab.room}
                         </Text>
                       </View>
 
@@ -253,3 +299,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
 })
+export default LabSelector
+export { LabSelectionModal }
+

@@ -13,11 +13,12 @@ import Animated, {
 } from "react-native-reanimated"
 import { AnimatedButton } from "../../components/AnimatedButton"
 import { ColorWheelPicker } from "../../components/ColorWheelPicker"
-import { LabSelectionModal } from "../../components/LabSelectionModal"
+import { LabSelector } from "../../components/LabSelectionModal"
 import { FONTS, SHADOWS, SIZES } from "../../constants/Colors"
 import { useAuth } from "../../context/AuthContext"
 import { useLab } from "../../context/LabContext"
 import { useTheme } from "../../context/ThemeContext"
+
 
 const { width } = Dimensions.get("window")
 
@@ -395,13 +396,7 @@ export default function TeacherControlScreen() {
 
   if (!selectedLabId) {
     return (
-      <LabSelectionModal
-        visible={showLabModal}
-        labs={assignedLabs}
-        onSelectLab={handleLabSelection}
-        onClose={() => setShowLabModal(false)}
-        currentUserId={user?.id || ""}
-      />
+      <LabSelector />
     )
   }
 
