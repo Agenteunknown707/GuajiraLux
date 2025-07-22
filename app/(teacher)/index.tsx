@@ -3,7 +3,8 @@
 import { Ionicons } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import axios from "axios"
-import { useEffect, useState } from "react"
+import { useFocusEffect } from "expo-router"
+import React, { useEffect, useState } from "react"
 import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import Animated, {
   interpolate,
@@ -112,6 +113,23 @@ export default function TeacherControlScreen() {
     getLabId()
   }, [])
 
+  useFocusEffect(
+    React.useCallback(() => {
+      setIsLoadingLabId(true);
+      setSelectedLabId(null);
+      const getLabId = async () => {
+        const storedLabId = await AsyncStorage.getItem("selectedLabId");
+        if (storedLabId) {
+          setSelectedLabId(storedLabId);
+        } else {
+          setSelectedLabId(null);
+        }
+        setIsLoadingLabId(false);
+      };
+      getLabId();
+    }, [])
+  );
+
   // Filtrar laboratorios asignados al docente
   const assignedLabs = labs.filter((lab) => user?.assignedLabs?.includes(lab.id))
   const currentLab = selectedLabId ? labs.find((l) => l.id === selectedLabId) : null
@@ -175,7 +193,8 @@ export default function TeacherControlScreen() {
       }
     }
     fetchFocos()
-  }, [isLoadingLabId, selectedLabId, labs])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoadingLabId, selectedLabId])
 
   const handleLabSelection = (labId: string) => {
     const success = activateLab(labId, user?.id || "")
