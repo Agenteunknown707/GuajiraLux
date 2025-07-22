@@ -96,6 +96,7 @@ export default function TeacherControlScreen() {
   const [showLightColorPicker, setShowLightColorPicker] = useState<string | null>(null)
   const [focoNombresIds, setFocoNombresIds] = useState<{ nombre: string; device_id: string }[]>([])
   const [isLoadingLabId, setIsLoadingLabId] = useState(true)
+  const [tempLights, setTempLights] = useState<any[]>([])
 
   // Shared values para animaciones
   const opacity = useSharedValue(0)
@@ -223,8 +224,8 @@ export default function TeacherControlScreen() {
   }
 
   const handleToggleAllLights = async () => {
-    if (!currentLab || !selectedLabId) return
-    const allOn = currentLab.lights.every((light) => light.isOn)
+    if (!currentLabFixed || !selectedLabId) return
+    const allOn = currentLabFixed.lights.every((light: any) => light.isOn)
     // Nuevo endpoint para encender/apagar todos los focos de una vez
     const deviceIds = focoNombresIds.map(foco => foco.device_id)
     try {
@@ -238,8 +239,13 @@ export default function TeacherControlScreen() {
     } catch (error) {
       console.error("Error al cambiar estado de los focos:", error)
     }
-    // Llamar a la función toggleAllLights del contexto
-    toggleAllLights(selectedLabId, !allOn)
+    // Actualiza el estado local si es un currentLab temporal
+    if (!currentLab) {
+      setTempLights(lights => lights.map(l => ({ ...l, isOn: !allOn })))
+    } else {
+      // Llamar a la función toggleAllLights del contexto
+      toggleAllLights(selectedLabId, !allOn)
+    }
   }
 
   const handleGlobalColorChange = (color: string, hsv: HSVColor) => {
@@ -253,29 +259,20 @@ export default function TeacherControlScreen() {
   }
 
   const handleApplyGlobalSettings = async () => {
-    if (!currentLab || !selectedLabId) return
-    
+    if (!currentLabFixed || !selectedLabId) return
     // Obtener los valores HSV del color seleccionado
     const hsvColor = hexToHsv(selectedColor)
-    
     console.log('=== INICIANDO APLICACIÓN DE CONFIGURACIÓN GLOBAL ===')
     console.log('Color seleccionado (hex):', selectedColor)
     console.log('Intensidad global:', globalIntensity)
     console.log('Valores HSV convertidos:', hsvColor)
-    
     try {
       const payload = {
-        device_ids: [
-          "eb60007e1dd10c2a94ylj6",
-          "ebea478e587ff3b4e3xphk",
-          "ebb9f6ba0f123c65bftm38",
-          "ebce9bd65682fdb7c4qlmf"
-        ],
+        device_ids: focoNombresIds.map(foco => foco.device_id),
         h: hsvColor.hue,
         s: hsvColor.saturation,
         v: hsvColor.value
       }
-      
       console.log('=== PETICIÓN POST /api/foco/color-all ===')
       console.log('URL:', "https://756077eced4b.ngrok-free.app/api/foco/color-all")
       console.log('Payload completo:', JSON.stringify(payload, null, 2))
@@ -283,27 +280,28 @@ export default function TeacherControlScreen() {
       console.log('Hue (H):', payload.h)
       console.log('Saturation (S):', payload.s)
       console.log('Value (V):', payload.v)
-      
       const startTime = Date.now()
       const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/color-all", payload)
       const endTime = Date.now()
-      
       console.log('=== RESPUESTA DEL SERVIDOR ===')
       console.log('Tiempo de respuesta:', endTime - startTime, 'ms')
       console.log('Status:', res.status)
       console.log('Status Text:', res.statusText)
       console.log('Headers:', res.headers)
       console.log('Datos de respuesta:', JSON.stringify(res.data, null, 2))
-      
-      // Aplicar configuración local
-      applyGlobalSettings(selectedLabId, selectedColor, globalIntensity)
+      // Actualiza el estado local si es un currentLab temporal
+      if (!currentLab) {
+        setTempLights(lights => lights.map(l => ({ ...l, color: selectedColor, intensity: globalIntensity })))
+      } else {
+        // Aplicar configuración local
+        applyGlobalSettings(selectedLabId, selectedColor, globalIntensity)
+      }
       console.log('=== CONFIGURACIÓN APLICADA EXITOSAMENTE ===')
       Alert.alert("Éxito", "Configuración aplicada a todos los focos activos")
     } catch (error: any) {
       console.error('=== ERROR EN LA PETICIÓN ===')
       console.error('Tipo de error:', error?.constructor?.name || 'Unknown')
       console.error('Mensaje de error:', error?.message || 'Error desconocido')
-      
       if (error?.response) {
         console.error('Status del error:', error.response.status)
         console.error('Datos del error:', JSON.stringify(error.response.data, null, 2))
@@ -314,14 +312,14 @@ export default function TeacherControlScreen() {
       } else {
         console.error('Error en la configuración de la petición:', error?.message || 'Error desconocido')
       }
-      
       Alert.alert("Error", "No se pudo aplicar la configuración global")
     }
   }
 
   const handleLightToggle = async (lightId: string) => {
+    console.log('[handleLightToggle] Presionado:', lightId);
     if (!selectedLabId) return
-    const light = currentLab?.lights.find((l) => l.id === lightId)
+    const light = currentLabFixed?.lights.find((l) => l.id === lightId)
     if (light) {
       console.log('Valor de lightId:', lightId)
       // Llamada a la API para encender/apagar el foco individual
@@ -336,7 +334,16 @@ export default function TeacherControlScreen() {
       } catch (error) {
         console.error(`Error al cambiar estado del foco ${lightId}:`, error)
       }
-      updateLight(selectedLabId, lightId, { isOn: !light.isOn })
+      // Actualiza el estado local si es un currentLab temporal
+      if (!currentLab) {
+        setTempLights(lights =>
+          lights.map(l =>
+            l.id === lightId ? { ...l, isOn: !l.isOn } : l
+          )
+        )
+      } else {
+        updateLight(selectedLabId, lightId, { isOn: !light.isOn })
+      }
     }
   }
 
@@ -356,6 +363,7 @@ export default function TeacherControlScreen() {
       console.log('POST /api/foco/colordata payload:', payload)
       const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/colordata", payload)
       console.log(`Respuesta de /api/foco/colordata para ${lightId}:`, res.data)
+      await new Promise(resolve => setTimeout(resolve, 10))
     } catch (error) {
       console.error(`Error al cambiar color del foco ${lightId}:`, error)
     }
@@ -440,6 +448,48 @@ export default function TeacherControlScreen() {
     return <LabSelector />
   }
 
+  // Antes del render de los focos individuales
+  console.log('selectedLabId:', selectedLabId);
+  console.log('labs en contexto:', labs.map(l => ({ id: l.id, name: l.name })));
+
+  // Si el selectedLabId es numérico y no hay currentLab, crea un currentLab temporal con los focos obtenidos
+  let currentLabFixed = currentLab;
+  if (!currentLab && selectedLabId && !isNaN(Number(selectedLabId)) && focoNombresIds.length > 0) {
+    // Inicializa tempLights si está vacío
+    if (tempLights.length === 0) {
+      setTempLights(focoNombresIds.map(foco => ({
+        id: foco.device_id,
+        name: foco.nombre,
+        color: '#FFFFFF',
+        intensity: 100,
+        isOn: false,
+      })))
+    }
+    currentLabFixed = {
+      id: selectedLabId,
+      name: 'Laboratorio seleccionado',
+      description: '',
+      building: '',
+      floor: '',
+      room: '',
+      capacity: 0,
+      isActive: true,
+      activeTeacher: '',
+      activePractice: null,
+      lights: tempLights.length > 0 ? tempLights : focoNombresIds.map(foco => ({
+        id: foco.device_id,
+        name: foco.nombre,
+        color: '#FFFFFF',
+        intensity: 100,
+        isOn: false,
+      })),
+    };
+    console.log('currentLabFixed (temporal):', currentLabFixed);
+  }
+
+  console.log('currentLab:', currentLabFixed);
+  console.log('currentLab.lights:', currentLabFixed?.lights);
+
   return (
     <Animated.View key={selectedLabId} style={[styles.container, { backgroundColor: colors.background }, containerAnimatedStyle]}>
       {/* Header */}
@@ -447,9 +497,9 @@ export default function TeacherControlScreen() {
         <View style={styles.headerContent}>
           <Image source={require("../../assets/images/logoUniGuajira.png")} style={styles.logo} resizeMode="contain" />
           <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>{currentLab?.name}</Text>
+            <Text style={styles.headerTitle}>{currentLabFixed?.name}</Text>
             <Text style={styles.headerSubtitle}>
-              {currentLab?.building} - {currentLab?.room}
+              {currentLabFixed?.building} - {currentLabFixed?.room}
             </Text>
             {/* Mostrar práctica activa */}
             {activePractice && (
@@ -525,7 +575,7 @@ export default function TeacherControlScreen() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Focos Individuales</Text>
 
           <View style={styles.lightsGrid}>
-            {currentLab?.lights.map((light, index) => (
+            {currentLabFixed?.lights?.map((light, index) => (
               <Animated.View
                 key={light.id}
                 style={[

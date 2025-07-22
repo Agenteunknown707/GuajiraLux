@@ -8,6 +8,7 @@ import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacit
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
 import { FONTS, SHADOWS, SIZES } from "../constants/Colors"
 import { globalAuthToken } from "../context/AuthContext"
+import { useLab } from "../context/LabContext"
 import { useTheme } from "../context/ThemeContext"
 import { AnimatedButton } from "./AnimatedButton"
 
@@ -25,6 +26,7 @@ export const LabSelector = () => {
   const [visible, setVisible] = useState(true) // visible por defecto para prueba
   const currentUserId = "123" // reemplaza con el ID real del usuario
   const router = useRouter()
+  const { labs: globalLabs } = useLab()
 
  useEffect(() => {
   const token = globalAuthToken
@@ -64,17 +66,39 @@ export const LabSelector = () => {
 
   const handleSelectLab = async (labId: string) => {
     console.log("Laboratorio seleccionado:", labId)
-    // Guardar labId seleccionado
-    await AsyncStorage.setItem("selectedLabId", labId)
+    // Buscar el lab local cuyo nombre coincida con el seleccionado
+    const normalize = (str: string) => str.normalize("NFD").replace(/[ -]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+    const selectedLab = labs.find(l => l.id === labId)
+    console.log('selectedLab (modal):', selectedLab)
+    console.log('globalLabs:', globalLabs.map(l => ({ id: l.id, name: l.name })))
+    if (selectedLab) {
+      console.log('Comparando:', {
+        selectedLabName: normalize(selectedLab.name),
+        globalLabNames: globalLabs.map(l => ({ id: l.id, name: normalize(l.name) }))
+      });
+      const localLab = globalLabs.find(l => normalize(l.name) === normalize(selectedLab.name))
+      console.log('localLab encontrado:', localLab)
+      if (localLab) {
+        await AsyncStorage.setItem("selectedLabId", localLab.id)
+        console.log('Guardando id local:', localLab.id)
+      } else {
+        // Si no se encuentra, guarda el id del modal como fallback
+        await AsyncStorage.setItem("selectedLabId", labId)
+        console.log('Guardando id del modal (fallback):', labId)
+      }
+    } else {
+      await AsyncStorage.setItem("selectedLabId", labId)
+      console.log('Guardando id del modal (no encontrado):', labId)
+    }
     // Ocultar el modal
     setVisible(false)
     // Redirigir a la pantalla principal de teacher
     router.replace("/(teacher)")
-    await new Promise(resolve => setTimeout(resolve, 100))
-    console.log("Laboratorio seleccionado:", labId)
+    await new Promise(resolve => setTimeout(resolve, 80))
+    
     router.replace("/(teacher)/practices")
-    await new Promise(resolve => setTimeout(resolve, 100))
-    console.log("Laboratorio seleccionado:", labId)
+    await new Promise(resolve => setTimeout(resolve, 80))
+    
     router.replace("/(teacher)")
     
   }

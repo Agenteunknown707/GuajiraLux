@@ -72,7 +72,7 @@ export default function TeacherProfileScreen() {
         <View style={[styles.photoSection, { backgroundColor: colors.surface }, SHADOWS.small]}>
           <View style={styles.photoContainer}>
             <Image
-              source={user?.photo ? { uri: user.photo } : require("../../assets/images/logoUniGuajira.png")}
+              source={user?.photo ? { uri: user.photo } : require("../../assets/images/perfil.png")}
               style={styles.profilePhoto}
             />
             <TouchableOpacity style={[styles.photoEditButton, { backgroundColor: colors.primary }]}>
