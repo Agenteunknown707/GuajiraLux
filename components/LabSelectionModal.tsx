@@ -136,6 +136,11 @@ const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
   const { colors } = useTheme()
   const translateY = useSharedValue(height)
   const opacity = useSharedValue(0)
+  const [shouldRender, setShouldRender] = useState(visible)
+
+  useEffect(() => {
+    if (visible) setShouldRender(true)
+  }, [visible])
 
   useEffect(() => {
     if (visible) {
@@ -146,6 +151,10 @@ const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
       translateY.value = withTiming(height, { duration: 300 })
     }
   }, [visible])
+
+  const handleAnimationEnd = () => {
+    if (!visible) setShouldRender(false)
+  }
 
   const getLabStatus = (lab: Lab) => {
     if (!lab.isActive) return { status: "available", color: colors.success, text: "Disponible" }
@@ -172,9 +181,17 @@ const LabSelectionModal: React.FC<LabSelectionModalProps> = ({
     onClose()
   }
 
+  if (!shouldRender) return null
+
   return (
-    <Modal visible={visible} transparent={true} animationType="none" onRequestClose={onClose}>
-      <Animated.View style={[styles.overlay, overlayAnimatedStyle]}>
+    <Modal
+      visible={shouldRender}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+      onDismiss={handleAnimationEnd}
+    >
+      <Animated.View style={[styles.overlay, overlayAnimatedStyle]} onLayout={handleAnimationEnd}>
         <Animated.View style={[styles.modalContainer, { backgroundColor: colors.background }, modalAnimatedStyle]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>

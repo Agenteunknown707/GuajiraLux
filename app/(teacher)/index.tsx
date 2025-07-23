@@ -186,7 +186,7 @@ export default function TeacherControlScreen() {
           })
         }
       } catch (error) {
-        console.error("Error al obtener focos:", error)
+        console.log("Error al obtener focos:", error)
       }
     }
     fetchFocos()
@@ -237,7 +237,7 @@ export default function TeacherControlScreen() {
       console.log(`Respuesta de /api/foco/switch-all:`, res.data)
       console.log(`Focos ${!allOn ? 'encendidos' : 'apagados'}:`, deviceIds)
     } catch (error) {
-      console.error("Error al cambiar estado de los focos:", error)
+      console.log("Error al cambiar estado de los focos:", error)
     }
     // Actualiza el estado local si es un currentLab temporal
     if (!currentLab) {
@@ -299,18 +299,18 @@ export default function TeacherControlScreen() {
       console.log('=== CONFIGURACIÓN APLICADA EXITOSAMENTE ===')
       Alert.alert("Éxito", "Configuración aplicada a todos los focos activos")
     } catch (error: any) {
-      console.error('=== ERROR EN LA PETICIÓN ===')
-      console.error('Tipo de error:', error?.constructor?.name || 'Unknown')
-      console.error('Mensaje de error:', error?.message || 'Error desconocido')
+      console.log('=== ERROR EN LA PETICIÓN ===')
+      console.log('Tipo de error:', error?.constructor?.name || 'Unknown')
+      console.log('Mensaje de error:', error?.message || 'Error desconocido')
       if (error?.response) {
-        console.error('Status del error:', error.response.status)
-        console.error('Datos del error:', JSON.stringify(error.response.data, null, 2))
-        console.error('Headers del error:', error.response.headers)
+        console.log('Status del error:', error.response.status)
+        console.log('Datos del error:', JSON.stringify(error.response.data, null, 2))
+        console.log('Headers del error:', error.response.headers)
       } else if (error?.request) {
-        console.error('No se recibió respuesta del servidor')
-        console.error('Request:', error.request)
+        console.log('No se recibió respuesta del servidor')
+        console.log('Request:', error.request)
       } else {
-        console.error('Error en la configuración de la petición:', error?.message || 'Error desconocido')
+        console.log('Error en la configuración de la petición:', error?.message || 'Error desconocido')
       }
       Alert.alert("Error", "No se pudo aplicar la configuración global")
     }
@@ -332,7 +332,7 @@ export default function TeacherControlScreen() {
         const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/switch", payload)
         console.log(`Foco ${lightId} cambiado a ${!light.isOn ? 'ON' : 'OFF'}. Respuesta:`, res.data)
       } catch (error) {
-        console.error(`Error al cambiar estado del foco ${lightId}:`, error)
+        console.log(`Error al cambiar estado del foco ${lightId}:`, error)
       }
       // Actualiza el estado local si es un currentLab temporal
       if (!currentLab) {
@@ -349,7 +349,15 @@ export default function TeacherControlScreen() {
 
   const handleLightColorChange = async (lightId: string, color: string, hsv: HSVColor) => {
     if (!selectedLabId) return
-    updateLight(selectedLabId, lightId, { color })
+    if (!currentLab) {
+      setTempLights(lights =>
+        lights.map(l =>
+          l.id === lightId ? { ...l, color } : l
+        )
+      )
+    } else {
+      updateLight(selectedLabId, lightId, { color })
+    }
     console.log(`Light ${lightId} HSV:`, hsv)
 
     // Enviar petición POST al endpoint colordata
@@ -363,9 +371,9 @@ export default function TeacherControlScreen() {
       console.log('POST /api/foco/colordata payload:', payload)
       const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/colordata", payload)
       console.log(`Respuesta de /api/foco/colordata para ${lightId}:`, res.data)
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 1000))
     } catch (error) {
-      console.error(`Error al cambiar color del foco ${lightId}:`, error)
+      console.log(`Error al cambiar color del foco ${lightId}:`, error)
     }
   }
 
@@ -386,7 +394,7 @@ export default function TeacherControlScreen() {
       const res = await axios.post("https://756077eced4b.ngrok-free.app/api/foco/colordata", payload)
       console.log(`Respuesta de /api/foco/colordata para ${lightId}:`, res.data)
     } catch (error) {
-      console.error(`Error al cambiar intensidad del foco ${lightId}:`, error)
+      console.log(`Error al cambiar intensidad del foco ${lightId}:`, error)
     }
   }
 
